@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CarneSystem – Vendedor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app-body">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon-sm">🥩</span>
+      <span class="brand-name-sm">CARNESYSTEM</span>
+    </div>
+    <div class="header-user">
+      <span class="user-badge" id="header-username">Vendedor</span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="vendor-main">
+
+    <!-- Novo Pedido -->
+    <section class="card section-card">
+      <div class="section-header">
+        <h2 class="section-title">📦 Novo Pedido</h2>
+      </div>
+
+      <div id="order-error" class="alert alert-error" style="display:none"></div>
+      <div id="order-success" class="alert alert-success" style="display:none"></div>
+
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Nome do Cliente *</label>
+          <input type="text" id="order-client" placeholder="Ex: Mercado São João" />
+        </div>
+        <div class="input-group">
+          <label>Tipo de Corte *</label>
+          <input type="text" id="order-cut" placeholder="Ex: Picanha, Fraldinha..." />
+        </div>
+        <div class="input-group">
+          <label>Quantidade (kg) *</label>
+          <input type="number" id="order-qty" placeholder="Ex: 10.5" min="0.1" step="0.1" />
+        </div>
+        <div class="input-group">
+          <label>Observações</label>
+          <input type="text" id="order-obs" placeholder="Ex: Sem osso, retirar até 14h..." />
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-order" id="btn-order" onclick="createOrder()">
+        <span class="btn-text">✚ Enviar Pedido para Produção</span>
+        <span class="btn-loader" style="display:none">⏳</span>
+      </button>
+    </section>
+
+    <!-- Meus Pedidos -->
+    <section class="card section-card">
+      <div class="section-header">
+        <h2 class="section-title">📋 Meus Pedidos</h2>
+        <button class="btn btn-ghost btn-sm" onclick="loadMyOrders()">↻ Atualizar</button>
+      </div>
+
+      <div id="my-orders-loading" class="loading-msg">Carregando pedidos...</div>
+      <div id="my-orders-empty" class="empty-msg" style="display:none">Nenhum pedido encontrado.</div>
+      <div id="my-orders-list" class="orders-table-wrap" style="display:none">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Cliente</th>
+              <th>Corte</th>
+              <th>Qtd (kg)</th>
+              <th>Observações</th>
+              <th>Status</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="my-orders-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="vendedor.js"></script>
+</body>
+</html>
