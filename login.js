@@ -4,7 +4,7 @@
 // =============================================
 
 // ⚠️  CONFIGURE AQUI suas credenciais do Supabase
-const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+const SUPABASE_URL = 'https://nxbfqozgsthxawrczlqr.supabase.co';
 const SUPABASE_ANON_KEY = 'SUA_ANON_KEY_AQUI';
 
 const { createClient } = supabase;
