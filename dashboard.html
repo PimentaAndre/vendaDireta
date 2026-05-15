@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema de Pedidos – Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="app-body dash-body">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon-sm">🥩</span>
+      <span class="brand-name-sm">CARNESYSTEM</span>
+      <span class="role-badge" style="background:var(--gold);color:var(--coal)">DASHBOARD</span>
+    </div>
+    <div class="header-user">
+      <!-- Filtro de mês -->
+      <div class="dash-filter-wrap">
+        <label class="filter-label">Período</label>
+        <select id="filter-month" class="filter-select" onchange="loadDashboard()">
+          <option value="all">Todos os tempos</option>
+          <option value="0">Janeiro</option>
+          <option value="1">Fevereiro</option>
+          <option value="2">Março</option>
+          <option value="3">Abril</option>
+          <option value="4">Maio</option>
+          <option value="5">Junho</option>
+          <option value="6">Julho</option>
+          <option value="7">Agosto</option>
+          <option value="8">Setembro</option>
+          <option value="9">Outubro</option>
+          <option value="10">Novembro</option>
+          <option value="11">Dezembro</option>
+        </select>
+        <select id="filter-year" class="filter-select" onchange="loadDashboard()">
+          <!-- Anos populados via JS -->
+        </select>
+      </div>
+      <button class="btn btn-gold" onclick="exportExcel()">📊 Exportar Excel</button>
+      <a href="producao.html" class="btn btn-ghost btn-sm">← Produção</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- LOADING -->
+  <div id="dash-loading" class="dash-loading">
+    <div class="dash-loading-inner">
+      <div class="dash-spinner"></div>
+      <p>Carregando dados...</p>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <main id="dash-main" class="dash-main" style="display:none">
+
+    <!-- KPI CARDS -->
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-data">
+          <div class="kpi-value" id="kpi-total-orders">0</div>
+          <div class="kpi-label">Total de Pedidos</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-data">
+          <div class="kpi-value" id="kpi-done-orders">0</div>
+          <div class="kpi-label">Pedidos Concluídos</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">⚖️</div>
+        <div class="kpi-data">
+          <div class="kpi-value" id="kpi-total-kg">0 kg</div>
+          <div class="kpi-label">Total de Carne</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">⏱️</div>
+        <div class="kpi-data">
+          <div class="kpi-value" id="kpi-avg-time">—</div>
+          <div class="kpi-label">Tempo Médio de Produção</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">👤</div>
+        <div class="kpi-data">
+          <div class="kpi-value" id="kpi-top-vendor">—</div>
+          <div class="kpi-label">Vendedor Destaque</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRÁFICOS ROW 1 -->
+    <section class="charts-row">
+
+      <!-- Vendedor que mais vende -->
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h3 class="chart-title">🏆 Ranking de Vendedores</h3>
+          <span class="chart-sub" id="chart-vendor-sub">por nº de pedidos</span>
+        </div>
+        <div class="chart-tabs">
+          <button class="chart-tab active" onclick="switchVendorMetric('orders', this)">Pedidos</button>
+          <button class="chart-tab" onclick="switchVendorMetric('kg', this)">Kg vendidos</button>
+        </div>
+        <div class="chart-area">
+          <canvas id="chart-vendors"></canvas>
+        </div>
+      </div>
+
+      <!-- Cortes mais pedidos -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">🔪 Cortes Mais Pedidos</h3>
+          <span class="chart-sub">top 8 por quantidade (kg)</span>
+        </div>
+        <div class="chart-area chart-area-sm">
+          <canvas id="chart-cuts"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- GRÁFICOS ROW 2 -->
+    <section class="charts-row">
+
+      <!-- Tempo médio por produção -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">⏱️ Tempo Médio de Produção</h3>
+          <span class="chart-sub">em horas, por vendedor</span>
+        </div>
+        <div class="chart-area">
+          <canvas id="chart-time"></canvas>
+        </div>
+      </div>
+
+      <!-- Pedidos por status -->
+      <div class="chart-card chart-narrow">
+        <div class="chart-header">
+          <h3 class="chart-title">📊 Status dos Pedidos</h3>
+          <span class="chart-sub">distribuição atual</span>
+        </div>
+        <div class="chart-area chart-area-sm" style="display:flex;align-items:center;justify-content:center">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+
+      <!-- Pedidos por dia (linha) -->
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h3 class="chart-title">📈 Volume de Pedidos no Tempo</h3>
+          <span class="chart-sub">pedidos por dia</span>
+        </div>
+        <div class="chart-area">
+          <canvas id="chart-timeline"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TABELA DETALHADA -->
+    <section class="table-section card">
+      <div class="section-header">
+        <h2 class="section-title">📋 Relatório Detalhado por Vendedor</h2>
+        <button class="btn btn-gold btn-sm" onclick="exportExcel()">📊 Exportar Excel</button>
+      </div>
+      <div class="orders-table-wrap">
+        <table class="orders-table" id="report-table">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Total Pedidos</th>
+              <th>Concluídos</th>
+              <th>Em Andamento</th>
+              <th>A Fazer</th>
+              <th>Total (kg)</th>
+              <th>Tempo Médio</th>
+              <th>Corte Favorito</th>
+            </tr>
+          </thead>
+          <tbody id="report-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- SheetJS para exportação Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

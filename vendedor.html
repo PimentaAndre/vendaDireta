@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sistema de pedidos – Vendedor</title>
+  <title>PedidoFácil Carnes – Area do Vendedor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -14,7 +14,7 @@
   <header class="app-header">
     <div class="header-brand">
       <span class="brand-icon-sm">🥩</span>
-      <span class="brand-name-sm">Sistema de Pedidos</span>
+      <span class="brand-name-sm">Sistena de Pedidos</span>
     </div>
     <div class="header-user">
       <span class="user-badge" id="header-username">Vendedor</span>
@@ -22,7 +22,6 @@
     </div>
   </header>
 
-  <!-- MAIN -->
   <main class="vendor-main">
 
     <!-- Novo Pedido -->
@@ -34,22 +33,28 @@
       <div id="order-error" class="alert alert-error" style="display:none"></div>
       <div id="order-success" class="alert alert-success" style="display:none"></div>
 
+      <!-- Dados gerais -->
       <div class="form-grid">
         <div class="input-group">
           <label>Nome do Cliente *</label>
           <input type="text" id="order-client" placeholder="Ex: Mercado São João" />
         </div>
         <div class="input-group">
-          <label>Tipo de Corte *</label>
-          <input type="text" id="order-cut" placeholder="Ex: Picanha, Fraldinha..." />
+          <label>Observações Gerais</label>
+          <input type="text" id="order-obs" placeholder="Ex: Retirar até 14h..." />
         </div>
-        <div class="input-group">
-          <label>Quantidade (kg) *</label>
-          <input type="number" id="order-qty" placeholder="Ex: 10.5" min="0.1" step="0.1" />
+      </div>
+
+      <!-- Cortes -->
+      <div class="cuts-section">
+        <div class="cuts-header">
+          <span class="cuts-label">🔪 Cortes do Pedido *</span>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addCutRow()">+ Adicionar Corte</button>
         </div>
-        <div class="input-group">
-          <label>Observações</label>
-          <input type="text" id="order-obs" placeholder="Ex: Sem osso, retirar até 14h..." />
+        <div id="cuts-list"></div>
+        <div class="cuts-total" id="cuts-total" style="display:none">
+          <span>Total do pedido:</span>
+          <span id="cuts-total-kg" class="cuts-total-value">0 kg</span>
         </div>
       </div>
 
@@ -74,8 +79,8 @@
             <tr>
               <th>#</th>
               <th>Cliente</th>
-              <th>Corte</th>
-              <th>Qtd (kg)</th>
+              <th>Cortes</th>
+              <th>Total (kg)</th>
               <th>Observações</th>
               <th>Status</th>
               <th>Data</th>
