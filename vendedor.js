@@ -105,11 +105,13 @@ async function createOrder() {
   hideMsg('order-error');
   hideMsg('order-success');
 
-  const client = document.getElementById('order-client').value.trim();
-  const obs    = document.getElementById('order-obs').value.trim();
-  const cuts   = getCutRows();
+  const client       = document.getElementById('order-client').value.trim();
+  const obs          = document.getElementById('order-obs').value.trim();
+  const deliveryDate = document.getElementById('order-delivery-date').value;
+  const cuts         = getCutRows();
 
   if (!client)       return showMsg('order-error', 'Informe o nome do cliente.');
+  if (!deliveryDate) return showMsg('order-error', 'Informe o dia de entrega.');
   if (!cuts || cuts.length === 0) return showMsg('order-error', 'Adicione pelo menos um corte com tipo e quantidade.');
 
   setLoading('btn-order', true);
@@ -126,17 +128,19 @@ async function createOrder() {
       client_name:  client,
       cut_type:     cutType,           // lista formatada de cortes
       cuts_json:    JSON.stringify(cuts), // JSON completo para detalhes
-      quantity_kg:  parseFloat(totalKg.toFixed(2)),
-      observations: obs || null,
-      status:       'todo',
+      quantity_kg:   parseFloat(totalKg.toFixed(2)),
+      observations:  obs || null,
+      delivery_date: deliveryDate,
+      status:        'todo',
       created_at:   new Date().toISOString()
     }]);
 
     if (error) throw error;
 
     // Limpa formulário
-    document.getElementById('order-client').value = '';
-    document.getElementById('order-obs').value    = '';
+    document.getElementById('order-client').value        = '';
+    document.getElementById('order-delivery-date').value = '';
+    document.getElementById('order-obs').value           = '';
     document.getElementById('cuts-list').innerHTML = '';
     cutRowCount = 0;
     addCutRow();
@@ -205,6 +209,7 @@ async function loadMyOrders() {
           <td class="cuts-cell">${cutsHtml}</td>
           <td style="color:var(--gold);font-weight:600">${String(o.quantity_kg).replace('.', ',')} kg</td>
           <td style="color:var(--text-muted)">${o.observations ? escHtml(o.observations) : '–'}</td>
+          <td style="color:var(--gold);font-weight:600">${o.delivery_date ? formatDeliveryDate(o.delivery_date) : '–'}</td>
           <td><span class="status-badge ${st.cls}">${st.label}</span></td>
           <td style="color:var(--text-muted);font-size:0.8rem">${date}</td>
         </tr>`;
@@ -234,6 +239,11 @@ function setLoading(btnId, loading) {
 function logout() {
   sessionStorage.removeItem('cs_user');
   window.location.href = 'login.html';
+}
+function formatDeliveryDate(iso) {
+  if (!iso) return '–';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 function escHtml(str) {
   const div = document.createElement('div');

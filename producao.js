@@ -41,6 +41,35 @@ function switchTab(tab) {
   if (tab === 'producao') loadProducaoUsers();
 }
  
+// ── Utilitários de data de entrega ──────────────────────────────────────
+function formatDeliveryDate(iso) {
+  if (!iso) return '–';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function getDeliveryClass(iso) {
+  if (!iso) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const delivery = new Date(iso + 'T00:00:00');
+  const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0)  return 'delivery-overdue';   // atrasado
+  if (diffDays === 0) return 'delivery-today';     // hoje
+  if (diffDays === 1) return 'delivery-tomorrow';  // amanhã
+  return 'delivery-ok';                            // com prazo
+}
+
+function getDeliveryLabel(iso) {
+  if (!iso) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const delivery = new Date(iso + 'T00:00:00');
+  const diffDays = Math.ceil((delivery - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0)  return ' ⚠️ Atrasado';
+  if (diffDays === 0) return ' 🔥 Hoje!';
+  if (diffDays === 1) return ' ⏰ Amanhã';
+  return '';
+}
+
 // ── Utilitários ──────────────────────────────────────
 function escHtml(str) {
   const div = document.createElement('div');
@@ -146,6 +175,7 @@ async function loadAllOrders() {
             📦 Total: <strong style="color:var(--gold)">${String(o.quantity_kg).replace('.', ',')} kg</strong>
           </div>
           ${o.observations ? `<div class="kanban-card-info" style="font-style:italic;margin-top:4px">💬 ${escHtml(o.observations)}</div>` : ''}
+          ${o.delivery_date ? `<div class="kanban-card-delivery ${getDeliveryClass(o.delivery_date)}">📅 Entrega: <strong>${formatDeliveryDate(o.delivery_date)}</strong>${getDeliveryLabel(o.delivery_date)}</div>` : ''}
           <div class="kanban-card-vendor">👤 ${escHtml(o.vendor_name)} · ${date}</div>
           <div class="kanban-card-actions">${actions}</div>
         </div>`;
