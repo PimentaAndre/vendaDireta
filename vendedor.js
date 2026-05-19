@@ -15,7 +15,7 @@ let cutRowCount = 0;
 
 // ── Init ──────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const raw = sessionStorage.getItem('cs_user');
+   const raw = sessionStorage.getItem('cs_user');
   if (!raw) return window.location.href = 'login.html';
 
   currentUser = JSON.parse(raw);
@@ -23,9 +23,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('header-username').textContent = currentUser.name || currentUser.username;
 
-  // Inicia com uma linha de corte
   addCutRow();
   loadMyOrders();
+
+  // ── Realtime: escuta mudanças nos pedidos do vendedor ──
+  sb.channel('orders-vendedor-realtime')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      (payload) => {
+        if (payload.new?.vendor_id === currentUser.id || payload.old?.vendor_id === currentUser.id) {
+          loadMyOrders();
+        }
+      }
+    )
+    .subscribe();
 });
 
 // ── Gerenciar linhas de corte ──────────────────────────────────────

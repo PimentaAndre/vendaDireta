@@ -29,6 +29,13 @@ window.addEventListener('DOMContentLoaded', () => {
   }
  
   loadAllOrders();
+
+  sb.channel('orders-realtime')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'orders' },
+      () => { loadAllOrders(); }
+    )
+    .subscribe();
 });
  
 // ── Tabs do painel master ──────────────────────────────────────
@@ -161,7 +168,7 @@ async function loadAllOrders() {
           <button class="btn-move" onclick="moveOrder('${o.id}', 'done')">✔ Concluir</button>
           <button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Cancelar</button>`;
       } else {
-        actions = `<button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Remover</button>`;
+        actions = '';
       }
  
       col.innerHTML += `
