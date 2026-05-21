@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='80'%3E🐂%3C/text%3E%3C/svg%3E">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PedidoFácil – Painel Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app-body">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="brand-icon-sm">🥩</span>
+      <span class="brand-name-sm">PedidoFácil</span>
+      <span class="role-badge" style="background:var(--gold);color:var(--coal)">MASTER</span>
+    </div>
+    <div class="header-user">
+      <a href="dashboard.html" class="btn btn-sm" style="background:var(--gold);color:var(--coal);font-weight:700;text-decoration:none">📊 Dashboard</a>
+      <a href="producao.html" class="btn btn-ghost btn-sm" style="text-decoration:none">🏭 Produção</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- PAINEL MASTER -->
+  <main style="padding: 28px; max-width: 1100px; margin: 0 auto; width: 100%;">
+
+    <div class="card" style="animation: fadeUp 0.4s ease both;">
+      <div class="section-header">
+        <h2 class="section-title">👑 Painel Master – Gerenciar Usuários</h2>
+        <button class="btn btn-primary btn-sm" onclick="openAddVendorModal()">+ Novo Vendedor</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="master-tabs">
+        <button class="master-tab active" id="tab-vendedores" onclick="switchTab('vendedores')">👤 Vendedores</button>
+        <button class="master-tab" id="tab-producao" onclick="switchTab('producao')">🏭 Produção</button>
+      </div>
+
+      <!-- Tab: Vendedores -->
+      <div id="panel-vendedores">
+        <div id="vendors-loading" class="loading-msg">Carregando vendedores...</div>
+        <div id="vendors-empty" class="empty-msg" style="display:none">Nenhum vendedor cadastrado.</div>
+        <div id="vendors-list" style="display:none">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Nome</th>
+                <th>Criado em</th>
+                <th>Senha</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="vendors-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Produção -->
+      <div id="panel-producao" style="display:none">
+        <div id="producao-loading" class="loading-msg">Carregando...</div>
+        <div id="producao-empty" class="empty-msg" style="display:none">Nenhum usuário de produção encontrado.</div>
+        <div id="producao-list" style="display:none">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Nome</th>
+                <th>Criado em</th>
+                <th>Senha</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="producao-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- MODAL: Adicionar Vendedor -->
+  <div id="modal-vendor" class="modal-overlay" style="display:none" onclick="closeModalOutside(event, 'modal-vendor')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Novo Vendedor</h3>
+        <button class="modal-close" onclick="closeAddVendorModal()">✕</button>
+      </div>
+      <div id="modal-error" class="alert alert-error" style="display:none"></div>
+      <div id="modal-success" class="alert alert-success" style="display:none"></div>
+      <div class="input-group">
+        <label>Nome Completo *</label>
+        <input type="text" id="new-vendor-name" placeholder="Ex: João Silva" />
+      </div>
+      <div class="input-group">
+        <label>Usuário (login) *</label>
+        <input type="text" id="new-vendor-username" placeholder="Ex: joao.silva" />
+      </div>
+      <div class="input-group">
+        <label>Senha *</label>
+        <div class="password-wrap">
+          <input type="password" id="new-vendor-password" placeholder="Mínimo 6 caracteres" />
+          <button class="toggle-pw" onclick="togglePassword('new-vendor-password', this)">👁</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeAddVendorModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-create-vendor" onclick="createVendor()">
+          <span class="btn-text">Criar Vendedor</span>
+          <span class="btn-loader" style="display:none">⏳</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ver / Alterar Senha -->
+  <div id="modal-password" class="modal-overlay" style="display:none" onclick="closeModalOutside(event, 'modal-password')">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🔑 Senha do Usuário</h3>
+        <button class="modal-close" onclick="closePasswordModal()">✕</button>
+      </div>
+      <div id="pw-modal-error" class="alert alert-error" style="display:none"></div>
+      <div id="pw-modal-success" class="alert alert-success" style="display:none"></div>
+      <div class="input-group">
+        <label>Usuário</label>
+        <input type="text" id="pw-modal-username" disabled style="opacity:0.5;cursor:not-allowed" />
+      </div>
+      <div class="input-group">
+        <label>Senha Atual</label>
+        <div class="password-wrap">
+          <input type="password" id="pw-modal-current" readonly />
+          <button class="toggle-pw" onclick="togglePassword('pw-modal-current', this)">👁</button>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Nova Senha</label>
+        <div class="password-wrap">
+          <input type="password" id="pw-modal-new" placeholder="Digite nova senha (mín. 6 caracteres)" />
+          <button class="toggle-pw" onclick="togglePassword('pw-modal-new', this)">👁</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closePasswordModal()">Fechar</button>
+        <button class="btn btn-primary" id="btn-save-password" onclick="saveNewPassword()">
+          <span class="btn-text">💾 Salvar Nova Senha</span>
+          <span class="btn-loader" style="display:none">⏳</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="master.js"></script>
+</body>
+</html>

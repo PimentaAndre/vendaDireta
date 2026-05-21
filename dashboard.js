@@ -536,7 +536,7 @@ function exportExcel() {
     styleHeader(ws);
   });
 
-  XLSX.writeFile(wb, `CarneSystem_Relatorio_${periodo}.xlsx`);
+  XLSX.writeFile(wb, `PedidoFácil_Relatorio_${periodo}.xlsx`);
 }
 
 function styleHeader(ws) {

@@ -80,7 +80,7 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s; outline: none;
 }
 .input-group input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
-.input-group input::placeholder { color: var(--coal-4); }
+.input-group input::placeholder { color: var(--text-main); }
 
 .password-wrap { position: relative; }
 .password-wrap input { padding-right: 44px; }
@@ -169,6 +169,10 @@ body {
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px;
 }
 @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+
+.placeholder {
+  color: rgba(255, 255, 255, 0.842);
+}
 
 /* ── CORTES (multi-cut) ─────────────────────────────── */
 
