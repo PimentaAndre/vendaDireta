@@ -374,3 +374,20 @@ body {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* ── CALENDARIO ICON ─────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+ 
+/* ── PAGINAÇÃO KANBAN ─────────────────────────── */
+.kanban-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 4px;
+  gap: 8px;
+  border-top: 1px solid var(--coal-4);
+  margin-top: 8px;
+}
