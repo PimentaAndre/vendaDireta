@@ -3,8 +3,8 @@
 //  Painel Master: Gerenciamento de Usuários
 // =============================================
 
-const SUPABASE_URL = 'https://nxbfqozgsthxawrczlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54YmZxb3pnc3RoeGF3cmN6bHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODcwNDQwNCwiZXhwIjoyMDk0MjgwNDA0fQ.Cpa4714pzyI9AEWgWeoT-OvsSYkWTmDcj5vp3gDLJyA';
+const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -27,12 +27,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ── Tabs ──────────────────────────────────────
 function switchTab(tab) {
-  document.getElementById('panel-vendedores').style.display = tab === 'vendedores' ? 'block' : 'none';
-  document.getElementById('panel-producao').style.display   = tab === 'producao'   ? 'block' : 'none';
-  document.getElementById('tab-vendedores').classList.toggle('active', tab === 'vendedores');
-  document.getElementById('tab-producao').classList.toggle('active',   tab === 'producao');
+  const tabs = ['vendedores', 'supervisores', 'diretores', 'producao'];
+  tabs.forEach(t => {
+    const panel = document.getElementById(`panel-${t}`);
+    const btn   = document.getElementById(`tab-${t}`);
+    if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    if (btn)   btn.classList.toggle('active', t === tab);
+  });
 
-  if (tab === 'producao') loadProducaoUsers();
+  if (tab === 'producao')    loadProducaoUsers();
+  if (tab === 'supervisores') loadRoleUsers('supervisor');
+  if (tab === 'diretores')   loadRoleUsers('diretor');
 }
 
 // ── Utilitários ──────────────────────────────────────
@@ -54,8 +59,13 @@ function logout() {
 }
 function togglePassword(inputId, btn) {
   const inp = document.getElementById(inputId);
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-  else { inp.type = 'password'; btn.textContent = '👁'; }
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.setAttribute('data-state', 'hide');
+  } else {
+    inp.type = 'password';
+    btn.setAttribute('data-state', 'show');
+  }
 }
 function closeModalOutside(e, modalId) {
   if (e.target.id === modalId) {
@@ -114,7 +124,56 @@ async function loadVendors() {
   }
 }
 
-// ── Carregar Usuários de Produção ──────────────────────────────────────
+// ── Carregar Supervisores / Diretores (genérico) ──────────────────────────────────────
+async function loadRoleUsers(role) {
+  const panelKey = role === 'supervisor' ? 'supervisores' : 'diretores';
+  document.getElementById(`${panelKey}-loading`).style.display = 'block';
+  document.getElementById(`${panelKey}-empty`).style.display   = 'none';
+  document.getElementById(`${panelKey}-list`).style.display    = 'none';
+
+  try {
+    const { data: users, error } = await sb
+      .from('users')
+      .select('id, username, name, password_hash, created_at')
+      .eq('role', role)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    document.getElementById(`${panelKey}-loading`).style.display = 'none';
+
+    if (!users || users.length === 0) {
+      document.getElementById(`${panelKey}-empty`).style.display = 'block';
+      return;
+    }
+
+    document.getElementById(`${panelKey}-list`).style.display = 'block';
+    const tbody = document.getElementById(`${panelKey}-tbody`);
+    tbody.innerHTML = '';
+
+    users.forEach(v => {
+      const date = new Date(v.created_at).toLocaleDateString('pt-BR');
+      tbody.innerHTML += `
+        <tr>
+          <td style="font-weight:600">${escHtml(v.username)}</td>
+          <td>${escHtml(v.name)}</td>
+          <td style="color:var(--text-muted);font-size:0.8rem">${date}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openPasswordModal('${v.id}', '${escHtml(v.username)}', '${escHtml(v.password_hash)}')">
+              🔑 Ver / Alterar
+            </button>
+          </td>
+          <td>
+            <button class="btn btn-danger" onclick="deleteVendor('${v.id}', '${escHtml(v.username)}')">✕ Remover</button>
+          </td>
+        </tr>`;
+    });
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById(`${panelKey}-loading`).textContent = 'Erro ao carregar usuários.';
+  }
+}
 async function loadProducaoUsers() {
   document.getElementById('producao-loading').style.display = 'block';
   document.getElementById('producao-empty').style.display   = 'none';
@@ -145,7 +204,6 @@ async function loadProducaoUsers() {
       const roleBadge = u.role === 'master'
         ? '<span class="role-mini-badge master">Master</span>'
         : '<span class="role-mini-badge producao">Produção</span>';
-
       tbody.innerHTML += `
         <tr>
           <td style="font-weight:600">${escHtml(u.username)} ${roleBadge}</td>
@@ -260,6 +318,7 @@ function showModalSuccess(msg) {
 }
 
 async function createVendor() {
+  const role     = document.getElementById('new-vendor-role').value;
   const name     = document.getElementById('new-vendor-name').value.trim();
   const username = document.getElementById('new-vendor-username').value.trim().toLowerCase();
   const password = document.getElementById('new-vendor-password').value;
@@ -286,18 +345,32 @@ async function createVendor() {
       username,
       name,
       password_hash: btoa(password),
-      role: 'vendedor',
+      role,
       created_at: new Date().toISOString()
     }]);
 
     if (error) throw error;
 
-    showModalSuccess('✅ Vendedor criado com sucesso!');
-    setTimeout(() => { closeAddVendorModal(); loadVendors(); }, 1500);
+    const roleLabels = {
+      vendedor:   'Vendedor',
+      supervisor: 'Supervisor',
+      diretor:    'Diretor',
+      producao:   'Produção'
+    };
+    showModalSuccess(`✅ ${roleLabels[role] || 'Usuário'} criado com sucesso!`);
+
+    // Recarrega a aba correta
+    setTimeout(() => {
+      closeAddVendorModal();
+      if (role === 'vendedor')   loadVendors();
+      else if (role === 'supervisor') loadRoleUsers('supervisor');
+      else if (role === 'diretor')    loadRoleUsers('diretor');
+      else if (role === 'producao')   loadProducaoUsers();
+    }, 1500);
 
   } catch (e) {
     console.error(e);
-    showModalError('Erro ao criar vendedor: ' + (e.message || 'tente novamente.'));
+    showModalError('Erro ao criar usuário: ' + (e.message || 'tente novamente.'));
   } finally {
     setModalLoading(false);
   }

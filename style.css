@@ -86,9 +86,19 @@ body {
 .password-wrap input { padding-right: 44px; }
 .toggle-pw {
   position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.2s;
+  background: none; border: none; cursor: pointer; font-size: 1rem;
+  opacity: 0.5; transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; color: #fff;
 }
 .toggle-pw:hover { opacity: 1; }
+
+/* SVG eye icons — branco, olho aberto por padrão */
+.toggle-pw .eye-open,
+.toggle-pw .eye-closed { display: none; pointer-events: none; }
+
+.toggle-pw[data-state="show"] .eye-open  { display: block; }
+.toggle-pw[data-state="hide"] .eye-closed { display: block; }
 
 /* ── BOTÕES ─────────────────────────────────── */
 
@@ -195,15 +205,55 @@ body {
 .cut-row { margin-bottom: 10px; }
 .cut-row-inner {
   display: grid;
-  grid-template-columns: 1fr 180px 36px;
+  grid-template-columns: 90px 1fr 120px 36px;
   gap: 10px;
   align-items: end;
 }
-@media (max-width: 600px) {
-  .cut-row-inner { grid-template-columns: 1fr 120px 36px; }
+@media (max-width: 700px) {
+  .cut-row-inner { grid-template-columns: 70px 1fr 90px 36px; }
 }
-
+@media (max-width: 500px) {
+  .cut-row-inner { grid-template-columns: 70px 1fr; gap: 8px; }
+  .cut-row-inner .cut-input-qty { grid-column: 1; }
+  .cut-row-inner .btn-remove-cut { grid-column: 2; justify-self: end; }
+}
 .cut-row-inner .input-group { margin-bottom: 0; }
+
+/* Autocomplete dropdown */
+.cut-search-input { width: 100%; }
+
+.cut-suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0; right: 0;
+  background: var(--coal-2);
+  border: 1px solid var(--coal-4);
+  border-radius: var(--radius);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.cut-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--coal-3);
+}
+.cut-suggestion-item:last-child { border-bottom: none; }
+.cut-suggestion-item:hover { background: var(--coal-3); }
+.sug-code {
+  font-size: 0.72rem; font-weight: 700; color: var(--gold);
+  background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.25);
+  padding: 1px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+}
+.sug-name { font-size: 0.85rem; color: var(--text-main); }
+.cut-suggestion-free { border-top: 1px solid var(--coal-4); }
+.sug-free { font-size: 0.82rem; color: var(--text-muted); }
+.sug-free strong { color: var(--text-main); }
 
 .btn-remove-cut {
   height: 44px; width: 36px;
@@ -297,6 +347,20 @@ body {
 .kanban-cut-item { font-size: 0.83rem; color: var(--text-muted); }
 .kanban-cut-item strong { color: var(--gold); }
 
+.cut-code-badge {
+  display: inline-block;
+  background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
 .kanban-card-info { font-size: 0.82rem; color: var(--text-muted); }
 .kanban-card-vendor { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 4px; }
 .kanban-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -332,8 +396,11 @@ body {
   padding: 2px 6px; border-radius: 4px; letter-spacing: 1px;
   text-transform: uppercase; vertical-align: middle; margin-left: 6px;
 }
-.role-mini-badge.master  { background: rgba(201,168,76,0.2); color: var(--gold); border: 1px solid rgba(201,168,76,0.3); }
-.role-mini-badge.producao{ background: rgba(39,174,96,0.15); color: #81c784; border: 1px solid rgba(39,174,96,0.25); }
+.role-mini-badge.master     { background: rgba(201,168,76,0.2);  color: var(--gold);    border: 1px solid rgba(201,168,76,0.3); }
+.role-mini-badge.producao   { background: rgba(39,174,96,0.15);  color: #81c784;        border: 1px solid rgba(39,174,96,0.25); }
+.role-mini-badge.supervisor { background: rgba(41,128,185,0.18); color: #7fb3d3;        border: 1px solid rgba(41,128,185,0.3); }
+.role-mini-badge.diretor    { background: rgba(142,68,173,0.18); color: #c39bd3;        border: 1px solid rgba(142,68,173,0.3); }
+.role-mini-badge.vendedor   { background: rgba(192,57,43,0.15);  color: var(--red-light); border: 1px solid rgba(192,57,43,0.25); }
 
 /* ── MODAL ─────────────────────────────────── */
 
@@ -390,4 +457,161 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 8px;
   border-top: 1px solid var(--coal-4);
   margin-top: 8px;
+}
+
+/* ── MODAL DETALHE DO PEDIDO (Produção) ─────────────────────────────── */
+
+.modal-detail-box {
+  max-width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 500px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.detail-field {
+  background: var(--coal-3);
+  border: 1px solid var(--coal-4);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-field-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.detail-field-value {
+  font-size: 0.92rem;
+  color: var(--cream);
+  font-weight: 500;
+}
+
+.detail-section-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.detail-cuts-section {
+  background: var(--coal-3);
+  border: 1px solid var(--coal-4);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.detail-cuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.detail-cut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--coal-2);
+  border: 1px solid var(--coal-4);
+  border-radius: 8px;
+}
+.detail-cut-name {
+  font-size: 0.88rem;
+  color: var(--gold);
+  font-weight: 500;
+}
+.detail-cut-qty {
+  font-size: 0.85rem;
+  color: var(--cream);
+  font-weight: 600;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid rgba(201,168,76,0.2);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.detail-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--coal-4);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.detail-total-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.detail-obs-wrap {
+  background: var(--coal-3);
+  border: 1px solid var(--coal-4);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 4px;
+}
+.detail-obs-text {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  font-style: italic;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+/* Hint de observação no card do kanban */
+.kanban-obs-hint {
+  font-size: 0.72rem;
+  color: var(--gold);
+  opacity: 0.7;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Hover highlight nos cards clicáveis */
+.kanban-card:hover {
+  border-color: var(--red);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
+}
+
+/* ── BOTÃO EDITAR PEDIDO (Vendedor) ─────────────────────────────── */
+.btn-edit-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(201,168,76,0.1);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.3);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.btn-edit-order:hover {
+  background: rgba(201,168,76,0.22);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(201,168,76,0.2);
 }

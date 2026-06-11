@@ -4,8 +4,8 @@
 // =============================================
 
 // ⚠️  CONFIGURE AQUI suas credenciais do Supabase
-const SUPABASE_URL = 'https://nxbfqozgsthxawrczlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54YmZxb3pnc3RoeGF3cmN6bHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODcwNDQwNCwiZXhwIjoyMDk0MjgwNDA0fQ.Cpa4714pzyI9AEWgWeoT-OvsSYkWTmDcj5vp3gDLJyA';
+const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -27,8 +27,13 @@ function setLoading(btnId, loading) {
 }
 function togglePassword(inputId, btn) {
   const inp = document.getElementById(inputId);
-  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
-  else { inp.type = 'password'; btn.textContent = '👁'; }
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.setAttribute('data-state', 'hide');
+  } else {
+    inp.type = 'password';
+    btn.setAttribute('data-state', 'show');
+  }
 }
 
 // ── Login ──────────────────────────────────────
@@ -72,10 +77,20 @@ async function handleLogin() {
     }));
 
     // Redireciona conforme papel
-    if (users.role === 'vendedor') {
+    // vendedor   → tela de pedidos
+    // supervisor → tela de pedidos (também tem acesso ao dashboard)
+    // diretor    → dashboard
+    // producao   → kanban de produção
+    // master     → kanban de produção (também tem acesso a tudo)
+    const role = users.role;
+    if (role === 'vendedor' || role === 'supervisor') {
       window.location.href = 'vendedor.html';
-    } else if (users.role === 'producao' || users.role === 'master') {
+    } else if (role === 'diretor') {
+      window.location.href = 'dashboard.html';
+    } else if (role === 'producao' || role === 'master') {
       window.location.href = 'producao.html';
+    } else {
+      window.location.href = 'vendedor.html'; // fallback seguro
     }
 
   } catch (e) {

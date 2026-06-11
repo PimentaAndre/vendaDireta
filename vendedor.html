@@ -4,7 +4,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='80'%3E🐂%3C/text%3E%3C/svg%3E">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PedidoDireto – Area do Vendedor</title>
+  <title>PedidoDireto – Área do Vendedor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -15,10 +15,11 @@
   <header class="app-header">
     <div class="header-brand">
       <span class="brand-icon-sm">🥩</span>
-      <span class="brand-name-sm">Sistena de Pedidos</span>
+      <span class="brand-name-sm">Sistema de Pedidos</span>
     </div>
     <div class="header-user">
       <span class="user-badge" id="header-username">Vendedor</span>
+      <a id="btn-dashboard-supervisor" href="dashboard.html" class="btn btn-sm" style="display:none;background:var(--gold);color:var(--coal);font-weight:700;text-decoration:none">📊 Dashboard</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
     </div>
   </header>
@@ -34,7 +35,6 @@
       <div id="order-error" class="alert alert-error" style="display:none"></div>
       <div id="order-success" class="alert alert-success" style="display:none"></div>
 
-      <!-- Dados gerais -->
       <div class="form-grid">
         <div class="input-group">
           <label>Nome do Cliente *</label>
@@ -50,7 +50,6 @@
         </div>
       </div>
 
-      <!-- Cortes -->
       <div class="cuts-section">
         <div class="cuts-header">
           <span class="cuts-label">🔪 Cortes do Pedido *</span>
@@ -90,6 +89,7 @@
               <th>Entrega</th>
               <th>Status</th>
               <th>Data</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="my-orders-tbody"></tbody>
@@ -98,6 +98,50 @@
     </section>
 
   </main>
+
+  <!-- MODAL: Editar Pedido -->
+  <div id="modal-edit-order" class="modal-overlay" style="display:none" onclick="if(event.target.id==='modal-edit-order')closeEditModal()">
+    <div class="modal-box" style="max-width:640px;width:95%" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>✏️ Editar Pedido</h3>
+        <button class="modal-close" onclick="closeEditModal()">✕</button>
+      </div>
+
+      <div id="edit-error" class="alert alert-error" style="display:none"></div>
+
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Nome do Cliente *</label>
+          <input type="text" id="edit-client" placeholder="Ex: Mercado São João" />
+        </div>
+        <div class="input-group">
+          <label>Dia de Entrega *</label>
+          <input type="date" id="edit-delivery" />
+        </div>
+        <div class="input-group">
+          <label>Observação</label>
+          <input type="text" id="edit-obs" placeholder="Ex: Retirar até 14h..." />
+        </div>
+      </div>
+
+      <div class="cuts-section">
+        <div class="cuts-header">
+          <span class="cuts-label">🔪 Cortes *</span>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addEditCutRow()">+ Adicionar Corte</button>
+        </div>
+        <div id="edit-cuts-list"></div>
+        <div class="cuts-total" style="display:flex;margin-top:8px">
+          <span>Total:</span>
+          <span id="edit-total-kg" class="cuts-total-value" style="margin-left:8px">—</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-edit" onclick="saveEditOrder()">💾 Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="vendedor.js"></script>

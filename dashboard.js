@@ -3,21 +3,21 @@
 //  Dashboard Master: gráficos + exportação Excel
 // =============================================
 
-const SUPABASE_URL = 'https://nxbfqozgsthxawrczlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54YmZxb3pnc3RoeGF3cmN6bHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODcwNDQwNCwiZXhwIjoyMDk0MjgwNDA0fQ.Cpa4714pzyI9AEWgWeoT-OvsSYkWTmDcj5vp3gDLJyA';
+const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
-let allOrders   = [];   // cache completo dos pedidos
-let charts      = {};   // instâncias Chart.js
+let allOrders = [];   // cache completo dos pedidos
+let charts = {};   // instâncias Chart.js
 let vendorMetric = 'orders'; // 'orders' | 'kg'
 
 // ── Paleta de cores para gráficos ─────────────────
 const COLORS = [
-  '#C0392B','#c9a84c','#2980B9','#27AE60','#8E44AD',
-  '#E67E22','#16A085','#D35400','#2C3E50','#F39C12'
+  '#C0392B', '#c9a84c', '#2980B9', '#27AE60', '#8E44AD',
+  '#E67E22', '#16A085', '#D35400', '#2C3E50', '#F39C12'
 ];
 
 // ── Init ──────────────────────────────────────
@@ -26,7 +26,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (!raw) return window.location.href = 'login.html';
 
   currentUser = JSON.parse(raw);
-  if (currentUser.role !== 'master') return window.location.href = 'login.html';
+  // Dashboard acessível para: master, diretor, supervisor
+  const DASH_ROLES = ['master', 'diretor', 'supervisor'];
+  if (!DASH_ROLES.includes(currentUser.role)) return window.location.href = 'login.html';
+
+  // Exibe botão "← Produção" apenas para master (que também acessa o kanban)
+  const btnProd = document.querySelector('a[href="producao.html"]');
+  if (btnProd) btnProd.style.display = currentUser.role === 'master' ? '' : 'none';
 
   populateYearFilter();
   await loadDashboard();
@@ -38,9 +44,9 @@ function populateYearFilter() {
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
   const ANO_MINIMO = 2026;
-  const MAX_ANOS = 500;    
+  const MAX_ANOS = 500;
 
-  let anoInicial = anoAtual - MAX_ANOS + 1; 
+  let anoInicial = anoAtual - MAX_ANOS + 1;
   if (anoInicial < ANO_MINIMO) {
     anoInicial = ANO_MINIMO;
   }
@@ -60,7 +66,7 @@ function populateYearFilter() {
 // ── Filtrar pedidos pelo período selecionado ──────────────────────────────────────
 function getFilteredOrders() {
   const month = document.getElementById('filter-month').value;
-  const year  = parseInt(document.getElementById('filter-year').value);
+  const year = parseInt(document.getElementById('filter-year').value);
 
   if (month === 'all') return allOrders;
 
@@ -73,7 +79,7 @@ function getFilteredOrders() {
 // ── Carregar todos os dados ──────────────────────────────────────
 async function loadDashboard() {
   document.getElementById('dash-loading').style.display = 'flex';
-  document.getElementById('dash-main').style.display    = 'none';
+  document.getElementById('dash-main').style.display = 'none';
 
   try {
     const { data, error } = await sb
@@ -98,7 +104,7 @@ function renderDashboard() {
   const orders = getFilteredOrders();
 
   document.getElementById('dash-loading').style.display = 'none';
-  document.getElementById('dash-main').style.display    = 'flex';
+  document.getElementById('dash-main').style.display = 'flex';
 
   renderKPIs(orders);
   renderVendorChart(orders);
@@ -111,28 +117,27 @@ function renderDashboard() {
 
 // ── KPIs ──────────────────────────────────────
 function renderKPIs(orders) {
-  const total     = orders.length;
-  const done      = orders.filter(o => o.status === 'done').length;
-  const totalKg   = orders.reduce((s, o) => s + (parseFloat(o.quantity_kg) || 0), 0);
-  const avgTime   = calcAvgTime(orders);
+  const total = orders.length;
+  const done = orders.filter(o => o.status === 'done').length;
+  const totalKg = orders.reduce((s, o) => s + (parseFloat(o.quantity_kg) || 0), 0);
+  const avgTime = calcAvgTime(orders);
 
   // Vendedor destaque (mais pedidos)
   const vCount = {};
   orders.forEach(o => { vCount[o.vendor_name] = (vCount[o.vendor_name] || 0) + 1; });
-  const topVendor = Object.entries(vCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
+  const topVendor = Object.entries(vCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
 
   document.getElementById('kpi-total-orders').textContent = total;
-  document.getElementById('kpi-done-orders').textContent  = done;
-  document.getElementById('kpi-total-kg').textContent     = totalKg.toLocaleString('pt-BR', {maximumFractionDigits:1}) + ' kg';
-  document.getElementById('kpi-avg-time').textContent     = avgTime;
-  document.getElementById('kpi-top-vendor').textContent   = topVendor;
+  document.getElementById('kpi-done-orders').textContent = done;
+  document.getElementById('kpi-total-kg').textContent = totalKg.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' kg';
+  document.getElementById('kpi-avg-time').textContent = avgTime;
+  document.getElementById('kpi-top-vendor').textContent = topVendor;
 }
 
 // ── Calcular tempo médio de produção (criado → concluído) ──────────────────────────────────────
 // Como não temos campo updated_at separado, usamos created_at + status 'done'
 // Precisaríamos de um campo completed_at. Por ora, estimamos com base nos dados disponíveis.
 function calcAvgTime(orders) {
-  // Filtra pedidos concluídos que tenham completed_at
   const done = orders.filter(o => o.status === 'done' && o.completed_at);
   if (done.length === 0) return '—';
 
@@ -141,10 +146,7 @@ function calcAvgTime(orders) {
     return sum + diff;
   }, 0) / done.length;
 
-  const hours = avgMs / 3600000;
-  if (hours < 1)   return Math.round(hours * 60) + ' min';
-  if (hours < 24)  return hours.toFixed(1).replace('.', ',') + ' h';
-  return (hours / 24).toFixed(1).replace('.', ',') + ' dias';
+  return formatHours(avgMs / 3600000);
 }
 
 // ── Gráfico: Ranking de Vendedores ──────────────────────────────────────
@@ -157,7 +159,7 @@ function renderVendorChart(orders) {
   });
 
   const sorted = Object.entries(byVendor)
-    .sort((a,b) => b[1][vendorMetric] - a[1][vendorMetric]);
+    .sort((a, b) => b[1][vendorMetric] - a[1][vendorMetric]);
 
   const labels = sorted.map(([name]) => name);
   const values = sorted.map(([, v]) => vendorMetric === 'kg'
@@ -177,7 +179,7 @@ function renderVendorChart(orders) {
         label: vendorMetric === 'kg' ? 'Kg vendidos' : 'Pedidos',
         data: values,
         backgroundColor: labels.map((_, i) => COLORS[i % COLORS.length] + 'CC'),
-        borderColor:     labels.map((_, i) => COLORS[i % COLORS.length]),
+        borderColor: labels.map((_, i) => COLORS[i % COLORS.length]),
         borderWidth: 2,
         borderRadius: 6,
       }]
@@ -217,9 +219,9 @@ function renderCutsChart(orders) {
     }
   });
 
-  const sorted = Object.entries(byCut).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const sorted = Object.entries(byCut).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const labels = sorted.map(([k]) => k);
-  const values = sorted.map(([,v]) => parseFloat(v.toFixed(1)));
+  const values = sorted.map(([, v]) => parseFloat(v.toFixed(1)));
 
   destroyChart('cuts');
   const ctx = document.getElementById('chart-cuts').getContext('2d');
@@ -230,7 +232,7 @@ function renderCutsChart(orders) {
       datasets: [{
         data: values,
         backgroundColor: COLORS.map(c => c + 'CC'),
-        borderColor:     COLORS,
+        borderColor: COLORS,
         borderWidth: 2,
       }]
     },
@@ -256,22 +258,35 @@ function renderCutsChart(orders) {
 function renderTimeChart(orders) {
   const byVendor = {};
   orders.filter(o => o.status === 'done' && o.completed_at).forEach(o => {
-    const hrs = (new Date(o.completed_at) - new Date(o.created_at)) / 3600000;
+    const secs = (new Date(o.completed_at) - new Date(o.created_at)) / 1000;
     if (!byVendor[o.vendor_name]) byVendor[o.vendor_name] = [];
-    byVendor[o.vendor_name].push(hrs);
+    byVendor[o.vendor_name].push(secs);
   });
 
   const labels = Object.keys(byVendor);
+  // Valores em segundos para o eixo Y
   const values = labels.map(v => {
     const arr = byVendor[v];
-    return parseFloat((arr.reduce((s,x) => s+x, 0) / arr.length).toFixed(2));
+    return arr.reduce((s, x) => s + x, 0) / arr.length;
   });
+
+  // Formata segundos para exibição legível
+  function formatSecs(s) {
+    const totalSec = Math.round(s);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (days >= 1) return days + 'd ' + (hours > 0 ? hours + 'h' : '');
+    if (hours >= 1) return hours + 'h ' + (mins > 0 ? mins + 'min' : '');
+    if (mins >= 1) return mins + 'min ' + (secs > 0 ? secs + 's' : '');
+    return secs + 's';
+  }
 
   destroyChart('time');
   const ctx = document.getElementById('chart-time').getContext('2d');
 
   if (labels.length === 0) {
-    // Sem dados de tempo ainda
     ctx.canvas.parentElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-muted);font-size:0.85rem">Dados disponíveis após pedidos concluídos<br>com campo <code>completed_at</code></div>';
     return;
   }
@@ -281,7 +296,7 @@ function renderTimeChart(orders) {
     data: {
       labels,
       datasets: [{
-        label: 'Horas em média',
+        label: 'Tempo médio',
         data: values,
         backgroundColor: '#c9a84cCC',
         borderColor: '#c9a84c',
@@ -294,7 +309,21 @@ function renderTimeChart(orders) {
       plugins: {
         ...baseChartOptions().plugins,
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} horas` } }
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${formatSecs(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        ...baseChartOptions().scales,
+        y: {
+          ...baseChartOptions().scales?.y,
+          ticks: {
+            color: '#8a8070',
+            callback: val => formatSecs(val)
+          }
+        }
       }
     }
   });
@@ -302,9 +331,9 @@ function renderTimeChart(orders) {
 
 // ── Gráfico: Status dos pedidos (rosca) ──────────────────────────────────────
 function renderStatusChart(orders) {
-  const todo     = orders.filter(o => o.status === 'todo').length;
+  const todo = orders.filter(o => o.status === 'todo').length;
   const progress = orders.filter(o => o.status === 'progress').length;
-  const done     = orders.filter(o => o.status === 'done').length;
+  const done = orders.filter(o => o.status === 'done').length;
 
   destroyChart('status');
   const ctx = document.getElementById('chart-status').getContext('2d');
@@ -314,8 +343,8 @@ function renderStatusChart(orders) {
       labels: ['A Fazer', 'Em Andamento', 'Concluído'],
       datasets: [{
         data: [todo, progress, done],
-        backgroundColor: ['#C0392BCC','#E67E22CC','#27AE60CC'],
-        borderColor:     ['#C0392B','#E67E22','#27AE60'],
+        backgroundColor: ['#C0392BCC', '#E67E22CC', '#27AE60CC'],
+        borderColor: ['#C0392B', '#E67E22', '#27AE60'],
         borderWidth: 2,
       }]
     },
@@ -340,12 +369,12 @@ function renderTimelineChart(orders) {
     byDay[day] = (byDay[day] || 0) + 1;
   });
 
-  const sorted = Object.entries(byDay).sort((a,b) => a[0].localeCompare(b[0]));
+  const sorted = Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0]));
   const labels = sorted.map(([d]) => {
-    const [y,m,day] = d.split('-');
+    const [y, m, day] = d.split('-');
     return `${day}/${m}`;
   });
-  const values = sorted.map(([,v]) => v);
+  const values = sorted.map(([, v]) => v);
 
   destroyChart('timeline');
   const ctx = document.getElementById('chart-timeline').getContext('2d');
@@ -405,12 +434,12 @@ function renderReportTable(orders) {
   const tbody = document.getElementById('report-tbody');
   tbody.innerHTML = '';
 
-  const sorted = Object.entries(byVendor).sort((a,b) => b[1].orders - a[1].orders);
+  const sorted = Object.entries(byVendor).sort((a, b) => b[1].orders - a[1].orders);
 
   sorted.forEach(([name, d]) => {
-    const favCut = Object.entries(d.cuts).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
+    const favCut = Object.entries(d.cuts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
     const avgT = d.times.length
-      ? formatHours(d.times.reduce((s,x) => s+x, 0) / d.times.length)
+      ? formatHours(d.times.reduce((s, x) => s + x, 0) / d.times.length)
       : '—';
 
     tbody.innerHTML += `
@@ -420,7 +449,7 @@ function renderReportTable(orders) {
         <td style="text-align:center"><span class="status-badge status-done">${d.done}</span></td>
         <td style="text-align:center"><span class="status-badge status-progress">${d.progress}</span></td>
         <td style="text-align:center"><span class="status-badge status-todo">${d.todo}</span></td>
-        <td style="color:var(--gold);font-weight:600">${d.kg.toLocaleString('pt-BR',{maximumFractionDigits:1})} kg</td>
+        <td style="color:var(--gold);font-weight:600">${d.kg.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg</td>
         <td style="color:var(--text-muted)">${avgT}</td>
         <td style="color:var(--text-muted)">${escHtml(favCut)}</td>
       </tr>`;
@@ -433,9 +462,9 @@ function renderReportTable(orders) {
 
 // ── Exportar Excel ──────────────────────────────────────
 function exportExcel() {
-  const orders  = getFilteredOrders();
-  const month   = document.getElementById('filter-month');
-  const year    = document.getElementById('filter-year').value;
+  const orders = getFilteredOrders();
+  const month = document.getElementById('filter-month');
+  const year = document.getElementById('filter-year').value;
   const periodo = month.value === 'all'
     ? `Todos_${year}`
     : `${month.options[month.selectedIndex].text}_${year}`;
@@ -452,10 +481,10 @@ function exportExcel() {
     try {
       const cuts = JSON.parse(o.cuts_json || '[]');
       if (cuts.length) cutsStr = cuts.map(c => `${c.type} (${c.qty}kg)`).join(', ');
-    } catch {}
+    } catch { }
 
     const tempo = (o.status === 'done' && o.completed_at)
-      ? ((new Date(o.completed_at) - new Date(o.created_at)) / 3600000).toFixed(2)
+      ? formatHours((new Date(o.completed_at) - new Date(o.created_at)) / 3600000)
       : '';
 
     const statusLabel = { todo: 'A Fazer', progress: 'Em Andamento', done: 'Concluído' }[o.status] || o.status;
@@ -475,7 +504,7 @@ function exportExcel() {
 
   const wsPedidos = XLSX.utils.aoa_to_sheet(pedidosData);
   wsPedidos['!cols'] = [
-    {wch:5},{wch:18},{wch:18},{wch:22},{wch:40},{wch:12},{wch:28},{wch:14},{wch:20}
+    { wch: 5 }, { wch: 18 }, { wch: 18 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 28 }, { wch: 14 }, { wch: 20 }
   ];
   XLSX.utils.book_append_sheet(wb, wsPedidos, 'Pedidos');
 
@@ -491,25 +520,25 @@ function exportExcel() {
       JSON.parse(o.cuts_json || '[]').forEach(c => {
         byVendor[v].cuts[c.type] = (byVendor[v].cuts[c.type] || 0) + parseFloat(c.qty);
       });
-    } catch {}
+    } catch { }
     if (o.status === 'done' && o.completed_at) {
       byVendor[v].times.push((new Date(o.completed_at) - new Date(o.created_at)) / 3600000);
     }
   });
 
   const resumoData = [
-    ['Vendedor', 'Total Pedidos', 'Concluídos', 'Em Andamento', 'A Fazer', 'Total Kg', 'Tempo Médio (h)', 'Corte Favorito']
+    ['Vendedor', 'Total Pedidos', 'Concluídos', 'Em Andamento', 'A Fazer', 'Total Kg', 'Tempo Médio', 'Corte Favorito']
   ];
-  Object.entries(byVendor).sort((a,b) => b[1].orders - a[1].orders).forEach(([name, d]) => {
-    const favCut = Object.entries(d.cuts).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
-    const avgT   = d.times.length
-      ? (d.times.reduce((s,x) => s+x, 0) / d.times.length).toFixed(2)
+  Object.entries(byVendor).sort((a, b) => b[1].orders - a[1].orders).forEach(([name, d]) => {
+    const favCut = Object.entries(d.cuts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+    const avgT = d.times.length
+      ? formatHours(d.times.reduce((s, x) => s + x, 0) / d.times.length)
       : '—';
     resumoData.push([name, d.orders, d.done, d.progress, d.todo, parseFloat(d.kg.toFixed(2)), avgT, favCut]);
   });
 
   const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
-  wsResumo['!cols'] = [{wch:20},{wch:14},{wch:14},{wch:16},{wch:12},{wch:12},{wch:18},{wch:20}];
+  wsResumo['!cols'] = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 20 }];
   XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo Vendedores');
 
   // ── Aba 3: Cortes ──
@@ -519,16 +548,16 @@ function exportExcel() {
       JSON.parse(o.cuts_json || '[]').forEach(c => {
         byCut[c.type] = (byCut[c.type] || 0) + parseFloat(c.qty);
       });
-    } catch {}
+    } catch { }
   });
 
   const cortesData = [['Tipo de Corte', 'Total (kg)']];
-  Object.entries(byCut).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
+  Object.entries(byCut).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
     cortesData.push([k, parseFloat(v.toFixed(2))]);
   });
 
   const wsCortes = XLSX.utils.aoa_to_sheet(cortesData);
-  wsCortes['!cols'] = [{wch:28},{wch:14}];
+  wsCortes['!cols'] = [{ wch: 28 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(wb, wsCortes, 'Cortes');
 
   // ── Estilos de cabeçalho ──
@@ -536,7 +565,7 @@ function exportExcel() {
     styleHeader(ws);
   });
 
-  XLSX.writeFile(wb, `PedidoFácil_Relatorio_${periodo}.xlsx`);
+  XLSX.writeFile(wb, `PedidoDireto_Relatorio_${periodo}.xlsx`);
 }
 
 function styleHeader(ws) {
@@ -571,11 +600,11 @@ function baseChartOptions() {
     scales: {
       x: {
         ticks: { color: '#8a8070', font: { family: 'DM Sans', size: 11 } },
-        grid:  { color: 'rgba(255,255,255,0.04)' }
+        grid: { color: 'rgba(255,255,255,0.04)' }
       },
       y: {
         ticks: { color: '#8a8070', font: { family: 'DM Sans', size: 11 } },
-        grid:  { color: 'rgba(255,255,255,0.04)' }
+        grid: { color: 'rgba(255,255,255,0.04)' }
       }
     }
   };
@@ -586,9 +615,28 @@ function destroyChart(key) {
 }
 
 function formatHours(h) {
-  if (h < 1)  return Math.round(h * 60) + ' min';
-  if (h < 24) return h.toFixed(1).replace('.', ',') + ' h';
-  return (h / 24).toFixed(1).replace('.', ',') + ' dias';
+  const totalSec = Math.round(h * 3600);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+
+  if (days >= 1) {
+    const parts = [days + 'd'];
+    if (hours > 0) parts.push(hours + 'h');
+    if (mins > 0) parts.push(mins + 'min');
+    return parts.join(' ');
+  }
+  if (hours >= 1) {
+    const parts = [hours + 'h'];
+    if (mins > 0) parts.push(mins + 'min');
+    if (secs > 0) parts.push(secs + 's');
+    return parts.join(' ');
+  }
+  if (mins >= 1) {
+    return secs > 0 ? `${mins}min ${secs}s` : `${mins}min`;
+  }
+  return secs + 's';
 }
 
 function escHtml(str) {

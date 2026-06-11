@@ -3,13 +3,14 @@
 //  Tela de Produção: apenas Kanban
 // =============================================
 
-const SUPABASE_URL = 'https://nxbfqozgsthxawrczlqr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54YmZxb3pnc3RoeGF3cmN6bHFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODcwNDQwNCwiZXhwIjoyMDk0MjgwNDA0fQ.Cpa4714pzyI9AEWgWeoT-OvsSYkWTmDcj5vp3gDLJyA';
+const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
+let ordersMap = {}; // guarda todos os pedidos pelo id para o modal de detalhes
 
 // ── Init ──────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -20,7 +21,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (currentUser.role !== 'producao' && currentUser.role !== 'master') {
     return window.location.href = 'login.html';
   }
-
   // Master tem acesso ao kanban mas também tem link para painel master
   if (currentUser.role === 'master') {
     document.getElementById('btn-master').style.display = 'inline-flex';
@@ -114,6 +114,7 @@ async function loadAllOrders() {
     }
 
     orders.forEach(o => {
+      ordersMap[o.id] = o; // salva no mapa para o modal acessar depois
       const col = document.getElementById(`cards-${o.status}`);
       if (!col) return;
       counts[o.status] = (counts[o.status] || 0) + 1;
@@ -127,7 +128,7 @@ async function loadAllOrders() {
         const cuts = JSON.parse(o.cuts_json || '[]');
         if (cuts.length > 0) {
           cutsHtml = cuts.map(c =>
-            `<div class="kanban-cut-item">🥩 <strong>${escHtml(c.type)}</strong> — ${String(c.qty).replace('.', ',')} kg</div>`
+            `<div class="kanban-cut-item">${c.code ? `<span class="cut-code-badge">${escHtml(c.code)}</span> ` : ''}🥩 <strong>${escHtml(c.type)}</strong> — ${String(c.qty).replace('.', ',')} kg</div>`
           ).join('');
         } else {
           cutsHtml = `<div class="kanban-cut-item">🥩 ${escHtml(o.cut_type)}</div>`;
@@ -149,8 +150,10 @@ async function loadAllOrders() {
         actions = '';
       }
 
+      const orderData = escHtml(JSON.stringify(o));
+
       col.innerHTML += `
-        <div class="kanban-card" id="card-${o.id}">
+        <div class="kanban-card" id="card-${o.id}" onclick="openDetailModal('${o.id}')" data-order-id="${o.id}" style="cursor:pointer">
           <div class="kanban-card-header">
             <div class="kanban-card-client">${escHtml(o.client_name)}</div>
             <div class="kanban-card-id">#${o.id.slice(-5).toUpperCase()}</div>
@@ -159,10 +162,13 @@ async function loadAllOrders() {
           <div class="kanban-card-info" style="margin-top:6px">
             📦 Total: <strong style="color:var(--gold)">${String(o.quantity_kg).replace('.', ',')} kg</strong>
           </div>
-          ${o.observations ? `<div class="kanban-card-info" style="font-style:italic;margin-top:4px">💬 ${escHtml(o.observations)}</div>` : ''}
-          ${o.delivery_date ? `<div class="kanban-card-delivery ${getDeliveryClass(o.delivery_date)}">📅 Entrega: <strong>${formatDeliveryDate(o.delivery_date)}</strong>${getDeliveryLabel(o.delivery_date)}</div>` : ''}
+          ${o.status === 'done'
+            ? `<div class="kanban-card-delivery delivery-ok">✅ Concluído em: <strong>${o.completed_at ? new Date(o.completed_at).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</strong></div>`
+            : o.delivery_date ? `<div class="kanban-card-delivery ${getDeliveryClass(o.delivery_date)}">📅 Entrega: <strong>${formatDeliveryDate(o.delivery_date)}</strong>${getDeliveryLabel(o.delivery_date)}</div>` : ''
+          }
+          ${o.observations ? `<div class="kanban-obs-hint">💬 Ver observações</div>` : ''}
           <div class="kanban-card-vendor">👤 ${escHtml(o.vendor_name)} · ${date}</div>
-          <div class="kanban-card-actions">${actions}</div>
+          <div class="kanban-card-actions" onclick="event.stopPropagation()">${actions}</div>
         </div>`;
     });
 
@@ -207,4 +213,65 @@ async function removeOrder(id) {
     console.error(e);
     showToast('Erro ao remover pedido.', true);
   }
+}
+// ── Modal de Detalhes do Pedido ──────────────────────────────────────
+function openDetailModal(orderId) {
+  const o = ordersMap[orderId];
+  if (!o) return;
+
+  // ID e título
+  document.getElementById('detail-title').textContent = o.client_name;
+  document.getElementById('detail-id').textContent = '#' + o.id.slice(-5).toUpperCase();
+
+  // Status badge
+  const statusMap = {
+    todo:     { label: 'A Fazer',      cls: 'status-todo' },
+    progress: { label: 'Em Andamento', cls: 'status-progress' },
+    done:     { label: 'Concluído',    cls: 'status-done' }
+  };
+  const st = statusMap[o.status] || statusMap.todo;
+  const badge = document.getElementById('detail-status-badge');
+  badge.textContent = st.label;
+  badge.className = 'status-badge ' + st.cls;
+
+  // Campos
+  document.getElementById('detail-client').textContent  = o.client_name;
+  document.getElementById('detail-vendor').textContent  = o.vendor_name;
+  document.getElementById('detail-created').textContent = new Date(o.created_at).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  document.getElementById('detail-delivery').textContent = o.delivery_date
+    ? formatDeliveryDate(o.delivery_date) + getDeliveryLabel(o.delivery_date)
+    : '—';
+
+  // Cortes
+  const cutsList = document.getElementById('detail-cuts-list');
+  cutsList.innerHTML = '';
+  let cuts = [];
+  try { cuts = JSON.parse(o.cuts_json || '[]'); } catch { cuts = []; }
+  if (cuts.length === 0 && o.cut_type) cuts = [{ type: o.cut_type, qty: o.quantity_kg }];
+  cuts.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'detail-cut-row';
+    row.innerHTML = `
+      <span class="detail-cut-name">${c.code ? `<span class="cut-code-badge">${escHtml(c.code)}</span> ` : ''}🥩 ${escHtml(c.type)}</span>
+      <span class="detail-cut-qty">${String(c.qty).replace('.', ',')} kg</span>`;
+    cutsList.appendChild(row);
+  });
+  document.getElementById('detail-total-kg').textContent = String(o.quantity_kg).replace('.', ',') + ' kg';
+
+  // Observações
+  const obsWrap = document.getElementById('detail-obs-wrap');
+  if (o.observations) {
+    document.getElementById('detail-obs').textContent = o.observations;
+    obsWrap.style.display = 'block';
+  } else {
+    obsWrap.style.display = 'none';
+  }
+
+  document.getElementById('modal-order-detail').style.display = 'flex';
+}
+
+function closeDetailModal() {
+  document.getElementById('modal-order-detail').style.display = 'none';
 }
