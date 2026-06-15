@@ -245,3 +245,63 @@
     justify-content: center;
   }
 }
+/* =============================================
+   RESPONSIVO DASHBOARD – SMARTPHONES (≤ 600px)
+============================================= */
+
+@media (max-width: 600px) {
+
+  /* ── Header filtros ── */
+  .app-header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+  .header-user { flex-wrap: wrap; gap: 8px; width: 100%; justify-content: flex-end; }
+  .dash-filter-wrap { order: 10; width: 100%; justify-content: space-between; padding: 6px 10px; }
+  .filter-label { display: none; }
+
+  /* ── Main ── */
+  .dash-main { padding: 14px 14px 32px; gap: 16px; }
+
+  /* ── KPI cards: 1 coluna ── */
+  .kpi-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi-card { padding: 14px 12px; gap: 10px; }
+  .kpi-icon { font-size: 1.5rem; }
+  .kpi-value { font-size: 1.35rem; letter-spacing: 1px; }
+  .kpi-label { font-size: 0.65rem; }
+
+  /* ── Gráficos: 1 coluna, altura reduzida ── */
+  .charts-row,
+  .charts-row:last-of-type { grid-template-columns: 1fr; gap: 14px; }
+  .chart-card { padding: 16px; gap: 12px; }
+  .chart-title { font-size: 0.95rem; letter-spacing: 1.5px; }
+  .chart-area { min-height: 180px; }
+  .chart-area-sm { min-height: 160px; max-height: 200px; }
+  .chart-tabs { width: 100%; justify-content: center; }
+  .chart-tab { padding: 5px 12px; font-size: 0.75rem; }
+
+  /* ── Tabela relatório → cards ── */
+  .table-section .orders-table-wrap { overflow-x: visible; }
+  .table-section .orders-table thead { display: none; }
+  .table-section .orders-table,
+  .table-section .orders-table tbody,
+  .table-section .orders-table tr,
+  .table-section .orders-table td { display: block; width: 100%; }
+  .table-section .orders-table tr {
+    background: var(--coal-3);
+    border: 1px solid var(--coal-4);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    padding: 12px 14px;
+  }
+  .table-section .orders-table td {
+    padding: 3px 0;
+    border: none;
+    font-size: 0.82rem;
+  }
+
+  /* ── Botão exportar ── */
+  .btn-gold { padding: 8px 14px; font-size: 0.8rem; }
+  .section-header { flex-wrap: wrap; gap: 10px; }
+}
+
+@media (max-width: 400px) {
+  .kpi-row { grid-template-columns: 1fr; }
+}

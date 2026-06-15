@@ -9,28 +9,28 @@ const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
-let cutRowCount  = 0;
+let cutRowCount = 0;
 let editingOrderId = null;
 
 // ── Catálogo de Carnes ────────────────────────────────────────────────────────
 let MEAT_CATALOG = {
-  '00881':'ACEM C/PEITO S/OSSO CONG.FRIBAL', '00692':'ACEM PDC CONG. FRIBAL',
-  '9':'ACEM RESFRIADO FRIBAL',               '571':'ACEM BOV S/ OSSO FRIBAL',
-  '775':'BIFE DE PRIMEIRA',                  '678':'BIFE DE PRIMEIRA 60G',
-  '03238':'BIFE DE PRIMEIRA CONGELADO',       '3188':'BIFE DE PALETA BOVINA',
-  '1124':'BISTECA BOV. PAULISTA',             '03220':'CARNE MOIDA DE PRIMEIRA CONGELADA',
-  '00774':'CARNE MOIDA DE PRIMEIRA CONG.PCTO','03054':'CARNE MOIDA (ACEM/PEITO)',
-  '75':'CARNE MOIDA DE PRIMEIRA',             '109':'CARNE MOIDA ESPECIAL',
-  '80':'CARNE MOIDA DE SEGUNDA',              '03190':'CARNE MOIDA CONG.( DT BOV )',
-  '3403':'CARNE MOIDA (ACEM/PEITO) PACOTE',   '1109':'COSTELA BOVINA FRIBAL SERRADA',
-  '72':'CUBO BOVINO ESPECIAL',                '03239':'CUBO BOVINO ESPECIAL CONGELADO',
-  '3189':'CUBO BOVINO',                       '800':'CUPIM CONGELADO FRIBAL',
-  '673':'DIANTEIRO BOV SERRADO',              '987':'ISCA BOVINA',
-  '179':'ISCA BOVINA DE PRIMEIRA PCT DE 1KG', '03237':'ISCA BOVINA CONGELADA',
-  '883':'PALETA BOV.S/ OSSO CONGELADA',       '28':'PALETA BOV.S/ OSSO RESFRIADA',
-  '3422':'PALETA BOV RESF. S/MUSCULO',         '2775':'PALETA BOV S/ OSSO A VACUO',
-  '572':'PALETA BOV S/ OSSO FRIBAL',           '557':'PEITO BOV S/OSSO FRIBAL',
-  '00121':'RETALHO DE SEGUNDA',
+  '00881': 'ACEM C/PEITO S/OSSO CONG.', '00692': 'ACEM PDC CONG.',
+  '9': 'ACEM RESFRIADO', '571': 'ACEM BOV S/ OSSO',
+  '775': 'BIFE DE PRIMEIRA', '678': 'BIFE DE PRIMEIRA 60G',
+  '03238': 'BIFE DE PRIMEIRA CONGELADO', '3188': 'BIFE DE PALETA BOVINA',
+  '1124': 'BISTECA BOV. PAULISTA', '03220': 'CARNE MOIDA DE PRIMEIRA CONGELADA',
+  '00774': 'CARNE MOIDA DE PRIMEIRA CONG.PCTO', '03054': 'CARNE MOIDA (ACEM/PEITO)',
+  '75': 'CARNE MOIDA DE PRIMEIRA', '109': 'CARNE MOIDA ESPECIAL',
+  '80': 'CARNE MOIDA DE SEGUNDA', '03190': 'CARNE MOIDA CONG.( DT BOV )',
+  '3403': 'CARNE MOIDA (ACEM/PEITO) PACOTE', '1109': 'COSTELA BOVINA SERRADA',
+  '72': 'CUBO BOVINO ESPECIAL', '03239': 'CUBO BOVINO ESPECIAL CONGELADO',
+  '3189': 'CUBO BOVINO', '800': 'CUPIM CONGELADO',
+  '673': 'DIANTEIRO BOV SERRADO', '987': 'ISCA BOVINA',
+  '179': 'ISCA BOVINA DE PRIMEIRA PCT DE 1KG', '03237': 'ISCA BOVINA CONGELADA',
+  '883': 'PALETA BOV.S/ OSSO CONGELADA', '28': 'PALETA BOV.S/ OSSO RESFRIADA',
+  '3422': 'PALETA BOV RESF. S/MUSCULO', '2775': 'PALETA BOV S/ OSSO A VACUO',
+  '572': 'PALETA BOV S/ OSSO', '557': 'PEITO BOV S/OSSO ',
+  '00121': 'RETALHO DE SEGUNDA',
 };
 
 function loadCatalogExtras() {
@@ -77,10 +77,10 @@ window.addEventListener('DOMContentLoaded', () => {
 // ── Linhas de Corte ───────────────────────────────────────────────────────────
 function addCutRow(prefill = null) {
   cutRowCount++;
-  const id   = cutRowCount;
+  const id = cutRowCount;
   const list = document.getElementById('cuts-list');
 
-  const row  = document.createElement('div');
+  const row = document.createElement('div');
   row.className = 'cut-row';
   row.id = `cut-row-${id}`;
   row.innerHTML = `
@@ -120,11 +120,11 @@ function addCutRow(prefill = null) {
   list.appendChild(row);
 
   if (prefill) {
-    document.getElementById(`cut-code-${id}`).value    = prefill.code || '';
-    document.getElementById(`cut-search-${id}`).value  = prefill.name || prefill.type || '';
+    document.getElementById(`cut-code-${id}`).value = prefill.code || '';
+    document.getElementById(`cut-search-${id}`).value = prefill.name || prefill.type || '';
     document.getElementById(`cut-search-${id}`).dataset.code = prefill.code || '';
     document.getElementById(`cut-search-${id}`).dataset.name = prefill.name || prefill.type || '';
-    document.getElementById(`cut-qty-${id}`).value     = prefill.qty || '';
+    document.getElementById(`cut-qty-${id}`).value = prefill.qty || '';
   }
 
   updateTotal();
@@ -140,21 +140,21 @@ function removeCutRow(id) {
 
 // Quando o usuário digita no campo de código, preenche o nome automaticamente
 function onCodeTyped(id) {
-  const code  = document.getElementById(`cut-code-${id}`).value.trim();
+  const code = document.getElementById(`cut-code-${id}`).value.trim();
   const nameEl = document.getElementById(`cut-search-${id}`);
   if (!code) return;
   const found = MEAT_CATALOG[code];
   if (found) {
-    nameEl.value         = found;
-    nameEl.dataset.code  = code;
-    nameEl.dataset.name  = found;
+    nameEl.value = found;
+    nameEl.dataset.code = code;
+    nameEl.dataset.name = found;
     updateTotal();
   }
 }
 function onCutSearch(id) {
   const input = document.getElementById(`cut-search-${id}`);
   const query = input.value.trim().toLowerCase();
-  const box   = document.getElementById(`cut-suggestions-${id}`);
+  const box = document.getElementById(`cut-suggestions-${id}`);
 
   if (!query) {
     // mostra todos quando campo está vazio mas focado
@@ -194,14 +194,14 @@ function renderSuggestions(id, items, rawQuery = '') {
       </div>`;
   }
 
-  box.innerHTML  = html;
+  box.innerHTML = html;
   box.style.display = html ? 'block' : 'none';
 }
 
 function selectSuggestion(id, code, name) {
   const searchEl = document.getElementById(`cut-search-${id}`);
-  const codeEl   = document.getElementById(`cut-code-${id}`);
-  searchEl.value        = name;
+  const codeEl = document.getElementById(`cut-code-${id}`);
+  searchEl.value = name;
   searchEl.dataset.code = code;
   searchEl.dataset.name = name;
   if (codeEl) codeEl.value = code;
@@ -212,7 +212,7 @@ function selectSuggestion(id, code, name) {
 
 function selectFree(id, rawText) {
   const searchEl = document.getElementById(`cut-search-${id}`);
-  searchEl.value        = rawText;
+  searchEl.value = rawText;
   searchEl.dataset.code = '';
   searchEl.dataset.name = rawText;
   hideSuggestions(id);
@@ -231,27 +231,27 @@ function hideSuggestions(id) {
 function updateTotal() {
   let total = 0;
   document.querySelectorAll('.cut-row').forEach(row => {
-    const id  = row.id.replace('cut-row-', '');
+    const id = row.id.replace('cut-row-', '');
     const qty = parseFloat(document.getElementById(`cut-qty-${id}`)?.value) || 0;
     total += qty;
   });
   const totalEl = document.getElementById('cuts-total');
-  const kgEl    = document.getElementById('cuts-total-kg');
+  const kgEl = document.getElementById('cuts-total-kg');
   if (total > 0) { totalEl.style.display = 'flex'; kgEl.textContent = total.toFixed(2).replace('.', ',') + ' kg'; }
-  else             totalEl.style.display = 'none';
+  else totalEl.style.display = 'none';
 }
 
 function getCutRows() {
   const rows = document.querySelectorAll('.cut-row');
   const cuts = [];
-  let valid  = true;
+  let valid = true;
 
   rows.forEach(row => {
-    const id    = row.id.replace('cut-row-', '');
+    const id = row.id.replace('cut-row-', '');
     const input = document.getElementById(`cut-search-${id}`);
-    const qty   = parseFloat(document.getElementById(`cut-qty-${id}`)?.value);
-    const name  = input?.dataset.name || input?.value.trim();
-    const code  = input?.dataset.code || '';
+    const qty = parseFloat(document.getElementById(`cut-qty-${id}`)?.value);
+    const name = input?.dataset.name || input?.value.trim();
+    const code = input?.dataset.code || '';
 
     if (!name || !qty || qty <= 0) { valid = false; return; }
     cuts.push({ code, type: name, qty });
@@ -265,40 +265,40 @@ async function createOrder() {
   hideMsg('order-error');
   hideMsg('order-success');
 
-  const client       = document.getElementById('order-client').value.trim();
-  const obs          = document.getElementById('order-obs').value.trim();
+  const client = document.getElementById('order-client').value.trim();
+  const obs = document.getElementById('order-obs').value.trim();
   const deliveryDate = document.getElementById('order-delivery-date').value;
-  const cuts         = getCutRows();
+  const cuts = getCutRows();
 
-  if (!client)       return showMsg('order-error', 'Informe o nome do cliente.');
+  if (!client) return showMsg('order-error', 'Informe o nome do cliente.');
   if (!deliveryDate) return showMsg('order-error', 'Informe o dia de entrega.');
-  if (!cuts)         return showMsg('order-error', 'Preencha todos os cortes com nome e quantidade.');
-  if (!cuts.length)  return showMsg('order-error', 'Adicione pelo menos um corte.');
+  if (!cuts) return showMsg('order-error', 'Preencha todos os cortes com nome e quantidade.');
+  if (!cuts.length) return showMsg('order-error', 'Adicione pelo menos um corte.');
 
   setLoading('btn-order', true);
   try {
     const totalKg = cuts.reduce((s, c) => s + c.qty, 0);
-    const cutType = cuts.map(c => `${c.code ? '['+c.code+'] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
+    const cutType = cuts.map(c => `${c.code ? '[' + c.code + '] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
 
     const { error } = await sb.from('orders').insert([{
-      vendor_id:    currentUser.id,
-      vendor_name:  currentUser.name || currentUser.username,
-      client_name:  client,
-      cut_type:     cutType,
-      cuts_json:    JSON.stringify(cuts),
-      quantity_kg:  parseFloat(totalKg.toFixed(2)),
+      vendor_id: currentUser.id,
+      vendor_name: currentUser.name || currentUser.username,
+      client_name: client,
+      cut_type: cutType,
+      cuts_json: JSON.stringify(cuts),
+      quantity_kg: parseFloat(totalKg.toFixed(2)),
       observations: obs || null,
       delivery_date: deliveryDate,
-      status:       'todo',
-      created_at:   new Date().toISOString()
+      status: 'todo',
+      created_at: new Date().toISOString()
     }]);
 
     if (error) throw error;
 
-    document.getElementById('order-client').value        = '';
+    document.getElementById('order-client').value = '';
     document.getElementById('order-delivery-date').value = '';
-    document.getElementById('order-obs').value           = '';
-    document.getElementById('cuts-list').innerHTML       = '';
+    document.getElementById('order-obs').value = '';
+    document.getElementById('cuts-list').innerHTML = '';
     cutRowCount = 0;
     addCutRow();
 
@@ -315,8 +315,8 @@ async function createOrder() {
 // ── Meus Pedidos ──────────────────────────────────────────────────────────────
 async function loadMyOrders() {
   document.getElementById('my-orders-loading').style.display = 'block';
-  document.getElementById('my-orders-empty').style.display   = 'none';
-  document.getElementById('my-orders-list').style.display    = 'none';
+  document.getElementById('my-orders-empty').style.display = 'none';
+  document.getElementById('my-orders-list').style.display = 'none';
 
   try {
     const { data: orders, error } = await sb
@@ -338,14 +338,14 @@ async function loadMyOrders() {
     tbody.innerHTML = '';
 
     const statusMap = {
-      todo:     { label: 'A Fazer',      cls: 'status-todo' },
+      todo: { label: 'A Fazer', cls: 'status-todo' },
       progress: { label: 'Em Andamento', cls: 'status-progress' },
-      done:     { label: 'Concluído',    cls: 'status-done' }
+      done: { label: 'Concluído', cls: 'status-done' }
     };
 
     orders.forEach((o, i) => {
       const date = new Date(o.created_at).toLocaleString('pt-BR');
-      const st   = statusMap[o.status] || statusMap.todo;
+      const st = statusMap[o.status] || statusMap.todo;
 
       let cutsHtml = '';
       try {
@@ -388,9 +388,9 @@ async function openEditModal(orderId) {
 
   editingOrderId = orderId;
 
-  document.getElementById('edit-client').value        = o.client_name;
-  document.getElementById('edit-delivery').value      = o.delivery_date || '';
-  document.getElementById('edit-obs').value           = o.observations || '';
+  document.getElementById('edit-client').value = o.client_name;
+  document.getElementById('edit-delivery').value = o.delivery_date || '';
+  document.getElementById('edit-obs').value = o.observations || '';
   document.getElementById('edit-error').style.display = 'none';
 
   // Preenche cortes
@@ -404,7 +404,7 @@ async function openEditModal(orderId) {
 
   cuts.forEach(c => {
     editCutCount++;
-    const id  = 'e' + editCutCount;
+    const id = 'e' + editCutCount;
     const row = document.createElement('div');
     row.className = 'cut-row';
     row.id = `cut-row-${id}`;
@@ -461,14 +461,14 @@ function closeEditModal() {
 function onCutSearchEdit(id) {
   const input = document.getElementById(`cut-search-${id}`);
   const query = input.value.trim().toLowerCase();
-  const box   = document.getElementById(`cut-suggestions-${id}`);
+  const box = document.getElementById(`cut-suggestions-${id}`);
 
   const filtered = !query
     ? catalogList().slice(0, 40)
     : catalogList().filter(item =>
-        item.code.toLowerCase().includes(query) ||
-        item.name.toLowerCase().includes(query)
-      ).slice(0, 20);
+      item.code.toLowerCase().includes(query) ||
+      item.name.toLowerCase().includes(query)
+    ).slice(0, 20);
 
   let html = '';
   filtered.forEach(item => {
@@ -490,8 +490,8 @@ function onCutSearchEdit(id) {
 
 function selectSuggestionEdit(id, code, name) {
   const searchEl = document.getElementById(`cut-search-${id}`);
-  const codeEl   = document.getElementById(`cut-code-${id}`);
-  searchEl.value        = name;
+  const codeEl = document.getElementById(`cut-code-${id}`);
+  searchEl.value = name;
   searchEl.dataset.code = code;
   searchEl.dataset.name = name;
   if (codeEl) codeEl.value = code;
@@ -501,12 +501,12 @@ function selectSuggestionEdit(id, code, name) {
 }
 
 function onCodeTypedEdit(id) {
-  const code   = document.getElementById(`cut-code-${id}`).value.trim();
+  const code = document.getElementById(`cut-code-${id}`).value.trim();
   const nameEl = document.getElementById(`cut-search-${id}`);
   if (!code) return;
   const found = MEAT_CATALOG[code];
   if (found) {
-    nameEl.value        = found;
+    nameEl.value = found;
     nameEl.dataset.code = code;
     nameEl.dataset.name = found;
     updateEditTotal();
@@ -566,7 +566,7 @@ function addEditCutRow() {
 function updateEditTotal() {
   let total = 0;
   document.getElementById('edit-cuts-list')?.querySelectorAll('.cut-row').forEach(row => {
-    const id  = row.id.replace('cut-row-', '');
+    const id = row.id.replace('cut-row-', '');
     const qty = parseFloat(document.getElementById(`cut-qty-${id}`)?.value) || 0;
     total += qty;
   });
@@ -577,13 +577,13 @@ function updateEditTotal() {
 function getEditCutRows() {
   const rows = document.getElementById('edit-cuts-list').querySelectorAll('.cut-row');
   const cuts = [];
-  let valid  = true;
+  let valid = true;
   rows.forEach(row => {
-    const id    = row.id.replace('cut-row-', '');
+    const id = row.id.replace('cut-row-', '');
     const input = document.getElementById(`cut-search-${id}`);
-    const qty   = parseFloat(document.getElementById(`cut-qty-${id}`)?.value);
-    const name  = input?.dataset.name || input?.value.trim();
-    const code  = input?.dataset.code || '';
+    const qty = parseFloat(document.getElementById(`cut-qty-${id}`)?.value);
+    const name = input?.dataset.name || input?.value.trim();
+    const code = input?.dataset.code || '';
     if (!name || !qty || qty <= 0) { valid = false; return; }
     cuts.push({ code, type: name, qty });
   });
@@ -591,16 +591,16 @@ function getEditCutRows() {
 }
 
 async function saveEditOrder() {
-  const client       = document.getElementById('edit-client').value.trim();
+  const client = document.getElementById('edit-client').value.trim();
   const deliveryDate = document.getElementById('edit-delivery').value;
-  const obs          = document.getElementById('edit-obs').value.trim();
-  const cuts         = getEditCutRows();
-  const errEl        = document.getElementById('edit-error');
+  const obs = document.getElementById('edit-obs').value.trim();
+  const cuts = getEditCutRows();
+  const errEl = document.getElementById('edit-error');
 
   errEl.style.display = 'none';
-  if (!client)       { errEl.textContent = 'Informe o nome do cliente.'; errEl.style.display = 'block'; return; }
+  if (!client) { errEl.textContent = 'Informe o nome do cliente.'; errEl.style.display = 'block'; return; }
   if (!deliveryDate) { errEl.textContent = 'Informe a data de entrega.'; errEl.style.display = 'block'; return; }
-  if (!cuts)         { errEl.textContent = 'Preencha todos os cortes.'; errEl.style.display = 'block'; return; }
+  if (!cuts) { errEl.textContent = 'Preencha todos os cortes.'; errEl.style.display = 'block'; return; }
 
   const btn = document.getElementById('btn-save-edit');
   btn.disabled = true;
@@ -608,13 +608,13 @@ async function saveEditOrder() {
 
   try {
     const totalKg = cuts.reduce((s, c) => s + c.qty, 0);
-    const cutType = cuts.map(c => `${c.code ? '['+c.code+'] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
+    const cutType = cuts.map(c => `${c.code ? '[' + c.code + '] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
 
     const { error } = await sb.from('orders').update({
-      client_name:  client,
-      cut_type:     cutType,
-      cuts_json:    JSON.stringify(cuts),
-      quantity_kg:  parseFloat(totalKg.toFixed(2)),
+      client_name: client,
+      cut_type: cutType,
+      cuts_json: JSON.stringify(cuts),
+      quantity_kg: parseFloat(totalKg.toFixed(2)),
       observations: obs || null,
       delivery_date: deliveryDate,
     }).eq('id', editingOrderId);
@@ -644,7 +644,7 @@ function showMsg(id, msg, type = 'error') {
 function hideMsg(id) { document.getElementById(id).style.display = 'none'; }
 function setLoading(btnId, loading) {
   const btn = document.getElementById(btnId);
-  btn.querySelector('.btn-text').style.display  = loading ? 'none' : '';
+  btn.querySelector('.btn-text').style.display = loading ? 'none' : '';
   btn.querySelector('.btn-loader').style.display = loading ? '' : 'none';
   btn.disabled = loading;
 }

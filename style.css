@@ -615,3 +615,123 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transform: translateY(-1px);
   box-shadow: 0 3px 10px rgba(201,168,76,0.2);
 }
+/* =============================================
+   RESPONSIVO – SMARTPHONES (≤ 600px)
+============================================= */
+
+@media (max-width: 600px) {
+
+  /* ── Header ── */
+  .app-header {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand-name-sm { font-size: 1.1rem; letter-spacing: 2px; }
+  .header-user { gap: 8px; flex-wrap: wrap; }
+  .btn-sm { padding: 7px 12px; font-size: 0.78rem; }
+  .user-badge { font-size: 0.75rem; padding: 5px 10px; }
+
+  /* ── Login ── */
+  .login-card { padding: 28px 20px; }
+  .brand-name { font-size: 1.9rem; }
+
+  /* ── Vendor main ── */
+  .vendor-main { padding: 14px; gap: 16px; }
+  .card { padding: 18px 16px; }
+  .section-header { flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .section-title { font-size: 1.1rem; }
+
+  /* ── Form ── */
+  .form-grid { grid-template-columns: 1fr; gap: 0; }
+
+  /* ── Cortes ── */
+  .cuts-section { padding: 12px; }
+  .cuts-header { flex-wrap: wrap; gap: 8px; }
+  .cut-row-inner {
+    grid-template-columns: 72px 1fr 36px;
+    grid-template-rows: auto auto;
+    gap: 8px;
+  }
+  /* código fica linha 1 col 1, nome fica linha 1 col 2, qty fica linha 2 col 1-2, botão linha 1 col 3 */
+  .cut-input-code  { grid-column: 1; grid-row: 1; }
+  .cut-input-search { grid-column: 2; grid-row: 1; }
+  .cut-input-qty   { grid-column: 1 / span 2; grid-row: 2; }
+  .btn-remove-cut  { grid-column: 3; grid-row: 1; align-self: end; }
+
+  /* ── Botão de pedido ── */
+  .btn-order { font-size: 0.85rem; padding: 12px; }
+
+  /* ── Tabela de pedidos → cards ── */
+  .orders-table-wrap { overflow-x: visible; }
+  .orders-table thead { display: none; }
+  .orders-table, .orders-table tbody,
+  .orders-table tr, .orders-table td { display: block; width: 100%; }
+  .orders-table tr {
+    background: var(--coal-3);
+    border: 1px solid var(--coal-4);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    padding: 12px 14px;
+  }
+  .orders-table td {
+    padding: 4px 0;
+    border: none;
+    font-size: 0.85rem;
+  }
+  .orders-table td:first-child { color: var(--text-muted); font-size: 0.72rem; }
+  .orders-table td:empty { display: none; }
+
+  /* ── Kanban ── */
+  .kanban-main { padding: 12px; gap: 12px; }
+  .kanban-col-header { padding: 12px 14px; }
+  .kanban-col-header h3 { font-size: 0.95rem; }
+  .kanban-cards { padding: 10px; gap: 10px; }
+  .kanban-card { padding: 12px 14px; }
+  .kanban-card-client { font-size: 0.88rem; }
+  .kanban-card-actions { gap: 6px; }
+  .btn-move { font-size: 0.75rem; padding: 5px 8px; }
+  .btn-danger { font-size: 0.75rem; padding: 5px 8px; }
+
+  /* ── Master tabs → scroll horizontal ── */
+  .master-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .master-tab { white-space: nowrap; padding: 8px 14px; font-size: 0.78rem; }
+
+  /* ── Master main ── */
+  main[style*="padding: 28px"] { padding: 14px !important; }
+
+  /* ── Modais ── */
+  .modal-overlay { padding: 12px; align-items: flex-end; }
+  .modal-box {
+    max-width: 100%;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 22px 18px;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .modal-detail-box { max-height: 92vh; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn { width: 100%; justify-content: center; }
+
+  /* ── Toast ── */
+  .toast { bottom: 12px; right: 12px; left: 12px; max-width: unset; font-size: 0.82rem; }
+
+  /* ── Autocomplete ── */
+  .cut-suggestions { max-height: 180px; }
+  .cut-suggestion-item { padding: 10px 12px; }
+}
+
+/* ── Tablet (601–900px) ── */
+@media (min-width: 601px) and (max-width: 900px) {
+  .app-header { padding: 12px 20px; }
+  .vendor-main { padding: 18px; }
+  .card { padding: 22px; }
+  .kanban-main { padding: 16px; gap: 14px; }
+  .master-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .master-tab { white-space: nowrap; }
+}
