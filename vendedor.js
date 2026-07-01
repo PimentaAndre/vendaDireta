@@ -3,7 +3,7 @@
 // =============================================
 
 const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
+const SUPABASE_ANON_KEY = 'sb_publishable_kl2Yj4T6wbPaq34OTfqvRg_G1E2dZEA';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -11,6 +11,36 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let cutRowCount = 0;
 let editingOrderId = null;
+
+// ── Verificação de Horário (Brasília) ─────────────────────────────────────────
+function getBrasiliaInfo() {
+  const now = new Date();
+  const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  return {
+    hour: brasiliaTime.getHours(),
+    dayOfWeek: brasiliaTime.getDay(), // 0=dom, 1=seg...5=sex, 6=sab
+    dateStr: brasiliaTime.toISOString().split('T')[0]
+  };
+}
+
+function getTodayBrasilia() {
+  const now = new Date();
+  const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  return brasiliaTime.toISOString().split('T')[0];
+}
+
+function isAfterNoonWeekday() {
+  const { hour, dayOfWeek } = getBrasiliaInfo();
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  return isWeekday && hour >= 12;
+}
+
+function openTimeBlockModal() {
+  document.getElementById('modal-time-block').style.display = 'flex';
+}
+function closeTimeBlockModal() {
+  document.getElementById('modal-time-block').style.display = 'none';
+}
 
 // ── Catálogo de Carnes ────────────────────────────────────────────────────────
 let MEAT_CATALOG = {
@@ -274,6 +304,11 @@ async function createOrder() {
   if (!deliveryDate) return showMsg('order-error', 'Informe o dia de entrega.');
   if (!cuts) return showMsg('order-error', 'Preencha todos os cortes com nome e quantidade.');
   if (!cuts.length) return showMsg('order-error', 'Adicione pelo menos um corte.');
+
+  // ── Bloqueio de horário: após 12h em dias úteis, não permite pedido para hoje ──
+  if (isAfterNoonWeekday() && deliveryDate === getTodayBrasilia()) {
+    return openTimeBlockModal();
+  }
 
   setLoading('btn-order', true);
   try {

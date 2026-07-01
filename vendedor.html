@@ -143,6 +143,22 @@
     </div>
   </div>
 
+  <!-- MODAL: Aviso de Horário Limite -->
+  <div id="modal-time-block" class="modal-overlay" style="display:none" onclick="if(event.target.id==='modal-time-block')closeTimeBlockModal()">
+    <div class="modal-box" style="max-width:420px;width:90%;text-align:center" onclick="event.stopPropagation()">
+      <div style="font-size:3rem;margin-bottom:8px">⏰</div>
+      <h3 style="margin-bottom:12px">Horário Limite Atingido</h3>
+      <p style="color:var(--text-muted);line-height:1.5;margin-bottom:24px">
+        Pedidos para entrega <strong>hoje</strong> não são aceitos após as <strong>12h</strong> em dias úteis.
+        <br><br>
+        Selecione uma data futura para continuar.
+      </p>
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn btn-primary" onclick="closeTimeBlockModal()">Entendi</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="vendedor.js"></script>
 </body>

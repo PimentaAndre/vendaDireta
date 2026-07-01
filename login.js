@@ -5,7 +5,7 @@
 
 // ⚠️  CONFIGURE AQUI suas credenciais do Supabase
 const SUPABASE_URL = 'https://mqxoosnpmujkopcirtxk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1xeG9vc25wbXVqa29wY2lydHhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDkzMDczOCwiZXhwIjoyMDk2NTA2NzM4fQ.C4bJED7drldgPUSusRVZtndQjx10wOJuLBO5XygNOEE';
+const SUPABASE_ANON_KEY = 'sb_publishable_kl2Yj4T6wbPaq34OTfqvRg_G1E2dZEA';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
