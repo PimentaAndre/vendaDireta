@@ -648,16 +648,37 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   /* ── Cortes ── */
   .cuts-section { padding: 12px; }
   .cuts-header { flex-wrap: wrap; gap: 8px; }
+  .cut-row {
+    background: var(--coal-2);
+    border: 1px solid var(--coal-4);
+    border-radius: var(--radius);
+    padding: 12px 12px 12px 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
   .cut-row-inner {
-    grid-template-columns: 72px 1fr 36px;
+    display: grid;
+    grid-template-columns: 80px 1fr;
     grid-template-rows: auto auto;
     gap: 8px;
   }
-  /* código fica linha 1 col 1, nome fica linha 1 col 2, qty fica linha 2 col 1-2, botão linha 1 col 3 */
-  .cut-input-code  { grid-column: 1; grid-row: 1; }
+  .cut-input-code   { grid-column: 1; grid-row: 1; }
   .cut-input-search { grid-column: 2; grid-row: 1; }
-  .cut-input-qty   { grid-column: 1 / span 2; grid-row: 2; }
-  .btn-remove-cut  { grid-column: 3; grid-row: 1; align-self: end; }
+  .cut-input-qty    { grid-column: 1 / span 2; grid-row: 2; }
+  .btn-remove-cut {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    height: 22px;
+    width: 22px;
+    font-size: 0.6rem;
+    margin: 0;
+    border-radius: 0 var(--radius) 0 var(--radius);
+    border-top: 1px solid rgba(231,76,60,0.35);
+    border-right: 1px solid rgba(231,76,60,0.35);
+    border-bottom: 1px solid rgba(231,76,60,0.35);
+    border-left: 1px solid rgba(231,76,60,0.35);
+  }
 
   /* ── Botão de pedido ── */
   .btn-order { font-size: 0.85rem; padding: 12px; }
