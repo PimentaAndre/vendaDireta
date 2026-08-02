@@ -135,7 +135,15 @@ body {
 
 /* ── APP HEADER ─────────────────────────────── */
 
-.app-body { display: flex; flex-direction: column; min-height: 100vh; }
+.app-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  text-transform: uppercase;
+}
+/* Emojis não são afetados por text-transform, então os ícones do sistema
+   continuam normais. Campos de senha usam type="password" (mascarados
+   com pontos), então não são visualmente afetados por esta regra. */
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 28px; background: var(--coal-2);

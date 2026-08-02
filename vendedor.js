@@ -44,23 +44,25 @@ function closeTimeBlockModal() {
 
 // ── Catálogo de Carnes ────────────────────────────────────────────────────────
 let MEAT_CATALOG = {
-  '00881': 'ACEM C/PEITO S/OSSO CONG.', '00692': 'ACEM PDC CONG.',
+  '881': 'ACEM C/PEITO S/OSSO CONG.', '692': 'ACEM PDC CONG.',
   '9': 'ACEM RESFRIADO', '571': 'ACEM BOV S/ OSSO',
   '775': 'BIFE DE PRIMEIRA', '678': 'BIFE DE PRIMEIRA 60G',
-  '03238': 'BIFE DE PRIMEIRA CONGELADO', '3188': 'BIFE DE PALETA BOVINA',
-  '1124': 'BISTECA BOV. PAULISTA', '03220': 'CARNE MOIDA DE PRIMEIRA CONGELADA',
-  '00774': 'CARNE MOIDA DE PRIMEIRA CONG.PCTO', '03054': 'CARNE MOIDA (ACEM/PEITO)',
+  '3238': 'BIFE DE PRIMEIRA CONGELADO', '3188': 'BIFE DE PALETA BOVINA',
+  '1124': 'BISTECA BOV. PAULISTA', '3220': 'CARNE MOIDA DE PRIMEIRA CONGELADA',
+  '774': 'CARNE MOIDA DE PRIMEIRA CONG.PCTO', '3054': 'CARNE MOIDA (ACEM/PEITO)',
   '75': 'CARNE MOIDA DE PRIMEIRA', '109': 'CARNE MOIDA ESPECIAL',
-  '80': 'CARNE MOIDA DE SEGUNDA', '03190': 'CARNE MOIDA CONG.( DT BOV )',
+  '80': 'CARNE MOIDA DE SEGUNDA', '3190': 'CARNE MOIDA CONG.( DT BOV )',
   '3403': 'CARNE MOIDA (ACEM/PEITO) PACOTE', '1109': 'COSTELA BOVINA SERRADA',
-  '72': 'CUBO BOVINO ESPECIAL', '03239': 'CUBO BOVINO ESPECIAL CONGELADO',
+  '72': 'CUBO BOVINO ESPECIAL', '3239': 'CUBO BOVINO ESPECIAL CONGELADO',
   '3189': 'CUBO BOVINO', '800': 'CUPIM CONGELADO',
   '673': 'DIANTEIRO BOV SERRADO', '987': 'ISCA BOVINA',
-  '179': 'ISCA BOVINA DE PRIMEIRA PCT DE 1KG', '03237': 'ISCA BOVINA CONGELADA',
+  '179': 'ISCA BOVINA DE PRIMEIRA PCT DE 1KG', '3237': 'ISCA BOVINA CONGELADA',
   '883': 'PALETA BOV.S/ OSSO CONGELADA', '28': 'PALETA BOV.S/ OSSO RESFRIADA',
   '3422': 'PALETA BOV RESF. S/MUSCULO', '2775': 'PALETA BOV S/ OSSO A VACUO',
   '572': 'PALETA BOV S/ OSSO', '557': 'PEITO BOV S/OSSO ',
-  '00121': 'RETALHO DE SEGUNDA',
+  '121': 'RETALHO DE SEGUNDA', "142": "FILE MIGNON S/CORDAO LIMPO", "71": "CARRE FATIADO", 
+  "500": "COSTELA SUINA FATIADA TIRAS OU CUBOS", "679": "MOCOTO FATIADO",
+   "124": "CUPIM BOVINO PROCESSADO", "43686": "CARNE MOIDA DE SEGUNDA PROCESSADA"
 };
 
 function loadCatalogExtras() {
@@ -296,11 +298,13 @@ async function createOrder() {
   hideMsg('order-success');
 
   const client = document.getElementById('order-client').value.trim();
+  const clientCode = document.getElementById('order-client-code').value.trim();
   const obs = document.getElementById('order-obs').value.trim();
   const deliveryDate = document.getElementById('order-delivery-date').value;
   const cuts = getCutRows();
 
   if (!client) return showMsg('order-error', 'Informe o nome do cliente.');
+  if (!clientCode) return showMsg('order-error', 'Informe a sigla do cliente.');
   if (!deliveryDate) return showMsg('order-error', 'Informe o dia de entrega.');
   if (!cuts) return showMsg('order-error', 'Preencha todos os cortes com nome e quantidade.');
   if (!cuts.length) return showMsg('order-error', 'Adicione pelo menos um corte.');
@@ -319,6 +323,7 @@ async function createOrder() {
       vendor_id: currentUser.id,
       vendor_name: currentUser.name || currentUser.username,
       client_name: client,
+      client_code: clientCode,
       cut_type: cutType,
       cuts_json: JSON.stringify(cuts),
       quantity_kg: parseFloat(totalKg.toFixed(2)),
@@ -331,6 +336,7 @@ async function createOrder() {
     if (error) throw error;
 
     document.getElementById('order-client').value = '';
+    document.getElementById('order-client-code').value = '';
     document.getElementById('order-delivery-date').value = '';
     document.getElementById('order-obs').value = '';
     document.getElementById('cuts-list').innerHTML = '';
@@ -373,8 +379,8 @@ async function loadMyOrders() {
     tbody.innerHTML = '';
 
     const statusMap = {
-      todo: { label: 'A Fazer', cls: 'status-todo' },
-      progress: { label: 'Em Andamento', cls: 'status-progress' },
+      todo: { label: 'Pendente', cls: 'status-todo' },
+      progress: { label: 'Em Produção', cls: 'status-progress' },
       done: { label: 'Concluído', cls: 'status-done' }
     };
 
@@ -400,6 +406,7 @@ async function loadMyOrders() {
         <tr>
           <td style="color:var(--text-muted);font-size:0.75rem">#${i + 1}</td>
           <td><strong>${escHtml(o.client_name)}</strong></td>
+          <td><span class="cut-code-badge">${o.client_code ? escHtml(o.client_code) : '–'}</span></td>
           <td class="cuts-cell">${cutsHtml}</td>
           <td style="color:var(--gold);font-weight:600">${String(o.quantity_kg).replace('.', ',')} kg</td>
           <td style="color:var(--text-muted)">${o.observations ? escHtml(o.observations) : '–'}</td>
@@ -421,9 +428,19 @@ async function openEditModal(orderId) {
   const { data: o, error } = await sb.from('orders').select('*').eq('id', orderId).single();
   if (error || !o) return;
 
+  // Checagem real de permissão: vendedor só edita pedidos 'Pendente'.
+  // Não confiamos apenas no botão escondido na tabela, pois o status pode
+  // ter mudado (produção iniciou o pedido) entre o carregamento da lista e o clique.
+  if (currentUser.role !== 'supervisor' && o.status !== 'todo') {
+    showMsg('order-error', 'Este pedido já está em produção e não pode mais ser editado.');
+    loadMyOrders();
+    return;
+  }
+
   editingOrderId = orderId;
 
   document.getElementById('edit-client').value = o.client_name;
+  document.getElementById('edit-client-code').value = o.client_code || '';
   document.getElementById('edit-delivery').value = o.delivery_date || '';
   document.getElementById('edit-obs').value = o.observations || '';
   document.getElementById('edit-error').style.display = 'none';
@@ -627,6 +644,7 @@ function getEditCutRows() {
 
 async function saveEditOrder() {
   const client = document.getElementById('edit-client').value.trim();
+  const clientCode = document.getElementById('edit-client-code').value.trim();
   const deliveryDate = document.getElementById('edit-delivery').value;
   const obs = document.getElementById('edit-obs').value.trim();
   const cuts = getEditCutRows();
@@ -634,6 +652,7 @@ async function saveEditOrder() {
 
   errEl.style.display = 'none';
   if (!client) { errEl.textContent = 'Informe o nome do cliente.'; errEl.style.display = 'block'; return; }
+  if (!clientCode) { errEl.textContent = 'Informe a sigla do cliente.'; errEl.style.display = 'block'; return; }
   if (!deliveryDate) { errEl.textContent = 'Informe a data de entrega.'; errEl.style.display = 'block'; return; }
   if (!cuts) { errEl.textContent = 'Preencha todos os cortes.'; errEl.style.display = 'block'; return; }
 
@@ -645,8 +664,12 @@ async function saveEditOrder() {
     const totalKg = cuts.reduce((s, c) => s + c.qty, 0);
     const cutType = cuts.map(c => `${c.code ? '[' + c.code + '] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
 
-    const { error } = await sb.from('orders').update({
+    // Vendedor só pode salvar se o pedido AINDA estiver 'todo' no banco no momento exato
+    // do save. Isso evita a corrida: produção pode ter iniciado o pedido entre o modal
+    // abrir e o vendedor clicar em salvar. Supervisor não tem essa restrição.
+    let query = sb.from('orders').update({
       client_name: client,
+      client_code: clientCode,
       cut_type: cutType,
       cuts_json: JSON.stringify(cuts),
       quantity_kg: parseFloat(totalKg.toFixed(2)),
@@ -654,7 +677,23 @@ async function saveEditOrder() {
       delivery_date: deliveryDate,
     }).eq('id', editingOrderId);
 
+    if (currentUser.role !== 'supervisor') {
+      query = query.eq('status', 'todo');
+    }
+
+    const { data, error } = await query.select('id');
+
     if (error) throw error;
+
+    // Nenhuma linha afetada = o filtro de status bloqueou a atualização,
+    // ou seja, o pedido não está mais 'todo' (já entrou em produção).
+    if (!data || data.length === 0) {
+      errEl.textContent = 'Este pedido já entrou em produção e não pode mais ser editado.';
+      errEl.style.display = 'block';
+      closeEditModal();
+      loadMyOrders();
+      return;
+    }
 
     closeEditModal();
     loadMyOrders();

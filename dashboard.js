@@ -340,7 +340,7 @@ function renderStatusChart(orders) {
   charts.status = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['A Fazer', 'Em Andamento', 'Concluído'],
+      labels: ['Pendente', 'Em Produção', 'Concluído'],
       datasets: [{
         data: [todo, progress, done],
         backgroundColor: ['#C0392BCC', '#E67E22CC', '#27AE60CC'],
@@ -487,7 +487,7 @@ function exportExcel() {
       ? formatHours((new Date(o.completed_at) - new Date(o.created_at)) / 3600000)
       : '';
 
-    const statusLabel = { todo: 'A Fazer', progress: 'Em Andamento', done: 'Concluído' }[o.status] || o.status;
+    const statusLabel = { todo: 'Pendente', progress: 'Em Produção', done: 'Concluído' }[o.status] || o.status;
 
     pedidosData.push([
       i + 1,
@@ -527,7 +527,7 @@ function exportExcel() {
   });
 
   const resumoData = [
-    ['Vendedor', 'Total Pedidos', 'Concluídos', 'Em Andamento', 'A Fazer', 'Total Kg', 'Tempo Médio', 'Corte Favorito']
+    ['Vendedor', 'Total Pedidos', 'Concluídos', 'Em Produção', 'Pendente', 'Total Kg', 'Tempo Médio', 'Corte Favorito']
   ];
   Object.entries(byVendor).sort((a, b) => b[1].orders - a[1].orders).forEach(([name, d]) => {
     const favCut = Object.entries(d.cuts).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';

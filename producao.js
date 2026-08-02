@@ -155,7 +155,7 @@ async function loadAllOrders() {
       col.innerHTML += `
         <div class="kanban-card" id="card-${o.id}" onclick="openDetailModal('${o.id}')" data-order-id="${o.id}" style="cursor:pointer">
           <div class="kanban-card-header">
-            <div class="kanban-card-client">${escHtml(o.client_name)}</div>
+            <div class="kanban-card-client">${o.client_code ? `<span class="kanban-card-code">${escHtml(o.client_code)}</span>` : ''}${escHtml(o.client_name)}</div>
             <div class="kanban-card-id">#${o.id.slice(-5).toUpperCase()}</div>
           </div>
           <div class="kanban-cuts-list">${cutsHtml}</div>
@@ -193,7 +193,7 @@ async function moveOrder(id, newStatus) {
 
     const { error } = await sb.from('orders').update(updateData).eq('id', id);
     if (error) throw error;
-    const labels = { progress: 'Em Andamento', done: 'Concluído' };
+    const labels = { progress: 'Em Produção', done: 'Concluído' };
     showToast(`Pedido movido para "${labels[newStatus]}"`);
     loadAllOrders();
   } catch (e) {
@@ -225,8 +225,8 @@ function openDetailModal(orderId) {
 
   // Status badge
   const statusMap = {
-    todo:     { label: 'A Fazer',      cls: 'status-todo' },
-    progress: { label: 'Em Andamento', cls: 'status-progress' },
+    todo:     { label: 'Pendente',      cls: 'status-todo' },
+    progress: { label: 'Em Produção', cls: 'status-progress' },
     done:     { label: 'Concluído',    cls: 'status-done' }
   };
   const st = statusMap[o.status] || statusMap.todo;
@@ -235,6 +235,7 @@ function openDetailModal(orderId) {
   badge.className = 'status-badge ' + st.cls;
 
   // Campos
+  document.getElementById('detail-code').textContent   = o.client_code || '—';
   document.getElementById('detail-client').textContent  = o.client_name;
   document.getElementById('detail-vendor').textContent  = o.vendor_name;
   document.getElementById('detail-created').textContent = new Date(o.created_at).toLocaleString('pt-BR', {
