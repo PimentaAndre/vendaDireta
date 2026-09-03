@@ -11,6 +11,9 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 let ordersMap = {}; // guarda todos os pedidos pelo id para o modal de detalhes
+let ordersByStatus = { todo: [], progress: [], done: [] }; // pedidos agrupados, já ordenados
+let kanbanPage = { todo: 1, progress: 1, done: 1 };         // página atual de cada coluna
+const KANBAN_PAGE_SIZE = 12;
 
 // ── Init ──────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -90,6 +93,7 @@ async function loadAllOrders() {
   ['todo','progress','done'].forEach(s => {
     document.getElementById(`cards-${s}`).innerHTML = '<div class="kanban-empty">Carregando...</div>';
     document.getElementById(`count-${s}`).textContent = '0';
+    document.getElementById(`pagination-${s}`).innerHTML = '';
   });
 
   try {
@@ -100,89 +104,121 @@ async function loadAllOrders() {
 
     if (error) throw error;
 
-    ['todo','progress','done'].forEach(s => {
-      document.getElementById(`cards-${s}`).innerHTML = '';
-    });
+    ordersByStatus = { todo: [], progress: [], done: [] };
+    ordersMap = {};
 
-    const counts = { todo: 0, progress: 0, done: 0 };
-
-    if (!orders || orders.length === 0) {
-      ['todo','progress','done'].forEach(s => {
-        document.getElementById(`cards-${s}`).innerHTML = '<div class="kanban-empty">Nenhum pedido</div>';
-      });
-      return;
-    }
-
-    orders.forEach(o => {
+    (orders || []).forEach(o => {
       ordersMap[o.id] = o; // salva no mapa para o modal acessar depois
-      const col = document.getElementById(`cards-${o.status}`);
-      if (!col) return;
-      counts[o.status] = (counts[o.status] || 0) + 1;
-
-      const date = new Date(o.created_at).toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-      });
-
-      let cutsHtml = '';
-      try {
-        const cuts = JSON.parse(o.cuts_json || '[]');
-        if (cuts.length > 0) {
-          cutsHtml = cuts.map(c =>
-            `<div class="kanban-cut-item">${c.code ? `<span class="cut-code-badge">${escHtml(c.code)}</span> ` : ''}🥩 <strong>${escHtml(c.type)}</strong> — ${String(c.qty).replace('.', ',')} kg</div>`
-          ).join('');
-        } else {
-          cutsHtml = `<div class="kanban-cut-item">🥩 ${escHtml(o.cut_type)}</div>`;
-        }
-      } catch {
-        cutsHtml = `<div class="kanban-cut-item">🥩 ${escHtml(o.cut_type)}</div>`;
-      }
-
-      let actions = '';
-      if (o.status === 'todo') {
-        actions = `
-          <button class="btn-move" onclick="moveOrder('${o.id}', 'progress')">▶ Iniciar</button>
-          <button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Cancelar</button>`;
-      } else if (o.status === 'progress') {
-        actions = `
-          <button class="btn-move" onclick="moveOrder('${o.id}', 'done')">✔ Concluir</button>
-          <button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Cancelar</button>`;
-      } else {
-        actions = '';
-      }
-
-      const orderData = escHtml(JSON.stringify(o));
-
-      col.innerHTML += `
-        <div class="kanban-card" id="card-${o.id}" onclick="openDetailModal('${o.id}')" data-order-id="${o.id}" style="cursor:pointer">
-          <div class="kanban-card-header">
-            <div class="kanban-card-client">${o.client_code ? `<span class="kanban-card-code">${escHtml(o.client_code)}</span>` : ''}${escHtml(o.client_name)}</div>
-            <div class="kanban-card-id">#${o.id.slice(-5).toUpperCase()}</div>
-          </div>
-          <div class="kanban-cuts-list">${cutsHtml}</div>
-          <div class="kanban-card-info" style="margin-top:6px">
-            📦 Total: <strong style="color:var(--gold)">${String(o.quantity_kg).replace('.', ',')} kg</strong>
-          </div>
-          ${o.status === 'done'
-            ? `<div class="kanban-card-delivery delivery-ok">✅ Concluído em: <strong>${o.completed_at ? new Date(o.completed_at).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</strong></div>`
-            : o.delivery_date ? `<div class="kanban-card-delivery ${getDeliveryClass(o.delivery_date)}">📅 Entrega: <strong>${formatDeliveryDate(o.delivery_date)}</strong>${getDeliveryLabel(o.delivery_date)}</div>` : ''
-          }
-          ${o.observations ? `<div class="kanban-obs-hint">💬 Ver observações</div>` : ''}
-          <div class="kanban-card-vendor">👤 ${escHtml(o.vendor_name)} · ${date}</div>
-          <div class="kanban-card-actions" onclick="event.stopPropagation()">${actions}</div>
-        </div>`;
+      if (ordersByStatus[o.status]) ordersByStatus[o.status].push(o);
     });
 
+    // Garante que a página atual ainda é válida após o recarregamento
     ['todo','progress','done'].forEach(s => {
-      document.getElementById(`count-${s}`).textContent = counts[s] || 0;
-      if ((counts[s] || 0) === 0) {
-        document.getElementById(`cards-${s}`).innerHTML = '<div class="kanban-empty">Nenhum pedido</div>';
-      }
+      const totalPages = Math.max(1, Math.ceil(ordersByStatus[s].length / KANBAN_PAGE_SIZE));
+      if (kanbanPage[s] > totalPages) kanbanPage[s] = totalPages;
     });
+
+    renderKanbanColumns();
 
   } catch (e) {
     console.error(e);
     showToast('Erro ao carregar pedidos.', true);
   }
+}
+
+// ── Renderização paginada das colunas ──────────────────────────────────────
+function renderKanbanColumns() {
+  ['todo','progress','done'].forEach(renderKanbanColumn);
+}
+
+function renderKanbanColumn(status) {
+  const all = ordersByStatus[status] || [];
+  const col = document.getElementById(`cards-${status}`);
+  const pagEl = document.getElementById(`pagination-${status}`);
+
+  document.getElementById(`count-${status}`).textContent = all.length;
+
+  if (all.length === 0) {
+    col.innerHTML = '<div class="kanban-empty">Nenhum pedido</div>';
+    pagEl.innerHTML = '';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(all.length / KANBAN_PAGE_SIZE));
+  const page = Math.min(Math.max(1, kanbanPage[status] || 1), totalPages);
+  kanbanPage[status] = page;
+
+  const start = (page - 1) * KANBAN_PAGE_SIZE;
+  const pageItems = all.slice(start, start + KANBAN_PAGE_SIZE);
+
+  col.innerHTML = pageItems.map(o => renderOrderCardHtml(o)).join('');
+
+  if (totalPages <= 1) {
+    pagEl.innerHTML = '';
+    return;
+  }
+
+  pagEl.innerHTML = `
+    <button class="btn btn-ghost btn-sm" ${page <= 1 ? 'disabled' : ''} onclick="goToKanbanPage('${status}', ${page - 1})">‹ Anterior</button>
+    <span style="font-size:0.78rem;color:var(--text-muted)">Página ${page} de ${totalPages}</span>
+    <button class="btn btn-ghost btn-sm" ${page >= totalPages ? 'disabled' : ''} onclick="goToKanbanPage('${status}', ${page + 1})">Próxima ›</button>`;
+}
+
+function goToKanbanPage(status, page) {
+  kanbanPage[status] = page;
+  renderKanbanColumn(status);
+}
+
+function renderOrderCardHtml(o) {
+  const date = new Date(o.created_at).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
+
+  let cutsHtml = '';
+  try {
+    const cuts = JSON.parse(o.cuts_json || '[]');
+    if (cuts.length > 0) {
+      cutsHtml = cuts.map(c =>
+        `<div class="kanban-cut-item">${c.code ? `<span class="cut-code-badge">${escHtml(c.code)}</span> ` : ''}🥩 <strong>${escHtml(c.type)}</strong> — ${String(c.qty).replace('.', ',')} kg</div>`
+      ).join('');
+    } else {
+      cutsHtml = `<div class="kanban-cut-item">🥩 ${escHtml(o.cut_type)}</div>`;
+    }
+  } catch {
+    cutsHtml = `<div class="kanban-cut-item">🥩 ${escHtml(o.cut_type)}</div>`;
+  }
+
+  let actions = '';
+  if (o.status === 'todo') {
+    actions = `
+      <button class="btn-move" onclick="moveOrder('${o.id}', 'progress')">▶ Iniciar</button>
+      <button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Cancelar</button>`;
+  } else if (o.status === 'progress') {
+    actions = `
+      <button class="btn-move" onclick="moveOrder('${o.id}', 'done')">✔ Concluir</button>
+      <button class="btn btn-danger" onclick="removeOrder('${o.id}')">✕ Cancelar</button>`;
+  } else {
+    actions = '';
+  }
+
+  return `
+    <div class="kanban-card" id="card-${o.id}" onclick="openDetailModal('${o.id}')" data-order-id="${o.id}" style="cursor:pointer">
+      <div class="kanban-card-header">
+        <div class="kanban-card-client">${o.client_code ? `<span class="kanban-card-code">${escHtml(o.client_code)}</span>` : ''}${escHtml(o.client_name)}</div>
+        <div class="kanban-card-id">#${o.id.slice(-5).toUpperCase()}</div>
+      </div>
+      <div class="kanban-cuts-list">${cutsHtml}</div>
+      <div class="kanban-card-info" style="margin-top:6px">
+        📦 Total: <strong style="color:var(--gold)">${String(o.quantity_kg).replace('.', ',')} kg</strong>
+      </div>
+      ${o.status === 'done'
+        ? `<div class="kanban-card-delivery delivery-ok">✅ Concluído em: <strong>${o.completed_at ? new Date(o.completed_at).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'}</strong></div>`
+        : o.delivery_date ? `<div class="kanban-card-delivery ${getDeliveryClass(o.delivery_date)}">📅 Entrega: <strong>${formatDeliveryDate(o.delivery_date)}</strong>${getDeliveryLabel(o.delivery_date)}</div>` : ''
+      }
+      ${o.observations ? `<div class="kanban-obs-hint">💬 Ver observações</div>` : ''}
+      <div class="kanban-card-vendor">👤 ${escHtml(o.vendor_name)} · ${date}</div>
+      <div class="kanban-card-actions" onclick="event.stopPropagation()">${actions}</div>
+    </div>`;
 }
 
 // ── Mover / Remover pedido ──────────────────────────────────────

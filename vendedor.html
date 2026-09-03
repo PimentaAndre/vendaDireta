@@ -32,44 +32,86 @@
         <h2 class="section-title">📦 Novo Pedido</h2>
       </div>
 
-      <div id="order-error" class="alert alert-error" style="display:none"></div>
-      <div id="order-success" class="alert alert-success" style="display:none"></div>
-
-      <div class="form-grid">
-        <div class="input-group">
-          <label>Nome do Cliente *</label>
-          <input type="text" id="order-client" placeholder="Ex: Mercado São João" />
-        </div>
-        <div class="input-group">
-          <label>Marca do Cliente *</label>
-          <input type="text" id="order-client-code" placeholder="Ex: MSJ01 ou 245" autocomplete="off" />
-        </div>
-        <div class="input-group">
-          <label>Dia de Entrega *</label>
-          <input type="date" id="order-delivery-date" />
-        </div>
-        <div class="input-group">
-          <label>Observação</label>
-          <input type="text" id="order-obs" placeholder="Ex: Retirar até 14h..." />
-        </div>
+      <!-- Tabs: Pedido Único / Pedido Semanal -->
+      <div class="master-tabs" style="margin-bottom:20px">
+        <button class="master-tab active" id="tab-order-single" onclick="switchOrderMode('single')">📦 Pedido Único</button>
+        <button class="master-tab" id="tab-order-weekly" onclick="switchOrderMode('weekly')">📅 Pedido Semanal</button>
       </div>
 
-      <div class="cuts-section">
-        <div class="cuts-header">
-          <span class="cuts-label">🔪 Cortes do Pedido *</span>
-          <button class="btn btn-ghost btn-sm" type="button" onclick="addCutRow()">+ Adicionar Corte</button>
+      <!-- ── PEDIDO ÚNICO ───────────────────────── -->
+      <div id="single-order-form">
+
+        <div id="order-error" class="alert alert-error" style="display:none"></div>
+        <div id="order-success" class="alert alert-success" style="display:none"></div>
+
+        <div class="form-grid">
+          <div class="input-group">
+            <label>Nome do Cliente *</label>
+            <input type="text" id="order-client" placeholder="Ex: Mercado São João" />
+          </div>
+          <div class="input-group">
+            <label>Marca do Cliente *</label>
+            <input type="text" id="order-client-code" placeholder="Ex: MSJ01 ou 245" autocomplete="off" />
+          </div>
+          <div class="input-group">
+            <label>Dia de Entrega *</label>
+            <input type="date" id="order-delivery-date" />
+          </div>
+          <div class="input-group">
+            <label>Observação</label>
+            <input type="text" id="order-obs" placeholder="Ex: Retirar até 14h..." />
+          </div>
         </div>
-        <div id="cuts-list"></div>
-        <div class="cuts-total" id="cuts-total" style="display:none">
-          <span>Total do pedido:</span>
-          <span id="cuts-total-kg" class="cuts-total-value">0 kg</span>
+
+        <div class="cuts-section">
+          <div class="cuts-header">
+            <span class="cuts-label">🔪 Cortes do Pedido *</span>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="addCutRow()">+ Adicionar Corte</button>
+          </div>
+          <div id="cuts-list"></div>
+          <div class="cuts-total" id="cuts-total" style="display:none">
+            <span>Total do pedido:</span>
+            <span id="cuts-total-kg" class="cuts-total-value">0 kg</span>
+          </div>
         </div>
+
+        <button class="btn btn-primary btn-order" id="btn-order" onclick="createOrder()">
+          <span class="btn-text">✚ Enviar Pedido para Produção</span>
+          <span class="btn-loader" style="display:none">⏳</span>
+        </button>
       </div>
 
-      <button class="btn btn-primary btn-order" id="btn-order" onclick="createOrder()">
-        <span class="btn-text">✚ Enviar Pedido para Produção</span>
-        <span class="btn-loader" style="display:none">⏳</span>
-      </button>
+      <!-- ── PEDIDO SEMANAL (múltiplos clientes/dias) ───────────────────────── -->
+      <div id="weekly-order-form" style="display:none">
+
+        <div id="week-error" class="alert alert-error" style="display:none"></div>
+        <div id="week-success" class="alert alert-success" style="display:none"></div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <span style="font-size:0.78rem;color:var(--text-muted);letter-spacing:0.5px">Como montar um pedido semanal</span>
+          <button type="button" class="help-icon-btn" onclick="openWeekHelpModal()" title="Como funciona o Pedido Semanal?">?</button>
+        </div>
+
+        <div class="input-group" style="max-width:260px">
+          <label>Semana Começando Em (Segunda-feira) *</label>
+          <input type="date" id="week-start-date" />
+        </div>
+
+        <div id="week-entries-list"></div>
+
+        <button class="btn btn-ghost btn-sm" type="button" onclick="addWeekEntry()" style="margin-top:4px">+ Adicionar Entrega (Cliente/Dia)</button>
+
+        <div class="cuts-total" id="week-total" style="display:none">
+          <span id="week-total-count">0 pedidos</span>
+          <span id="week-total-kg" class="cuts-total-value">0 kg</span>
+        </div>
+
+        <button class="btn btn-primary btn-order" id="btn-week-order" onclick="submitWeeklyOrders()">
+          <span class="btn-text">🚀 Enviar Todos os Pedidos da Semana</span>
+          <span class="btn-loader" style="display:none">⏳</span>
+        </button>
+      </div>
+
     </section>
 
     <!-- Meus Pedidos -->
@@ -77,6 +119,12 @@
       <div class="section-header">
         <h2 class="section-title">📋 Meus Pedidos</h2>
         <button class="btn btn-ghost btn-sm" onclick="loadMyOrders()">↻ Atualizar</button>
+      </div>
+
+      <!-- Tabs: Em Aberto/Andamento / Concluídos -->
+      <div class="master-tabs" style="margin-bottom:20px">
+        <button class="master-tab active" id="tab-orders-active" onclick="switchOrdersTab('active')">🔄 Em Aberto / Andamento <span class="col-count" id="count-orders-active">0</span></button>
+        <button class="master-tab" id="tab-orders-done" onclick="switchOrdersTab('done')">✅ Concluídos <span class="col-count" id="count-orders-done">0</span></button>
       </div>
 
       <div id="my-orders-loading" class="loading-msg">Carregando pedidos...</div>
@@ -164,6 +212,22 @@
       </p>
       <div class="modal-actions" style="justify-content:center">
         <button class="btn btn-primary" onclick="closeTimeBlockModal()">Entendi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Como Funciona o Pedido Semanal -->
+  <div id="modal-week-help" class="modal-overlay" style="display:none" onclick="if(event.target.id==='modal-week-help')closeWeekHelpModal()">
+    <div class="modal-box" style="max-width:460px;width:90%" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📅 Como Funciona o Pedido Semanal</h3>
+        <button class="modal-close" onclick="closeWeekHelpModal()">✕</button>
+      </div>
+      <p style="color:var(--text-muted);line-height:1.6;margin-bottom:20px">
+        Monte a rota da semana: adicione uma entrega para cada dia/cliente (cada uma pode ter vários cortes) e envie tudo de uma vez.
+      </p>
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn btn-primary" onclick="closeWeekHelpModal()">Entendi</button>
       </div>
     </div>
   </div>

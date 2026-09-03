@@ -283,7 +283,108 @@ body {
 }
 .cuts-total-value { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
 
+/* ── ÍCONE DE AJUDA (?) ─────────────────────── */
+.help-icon-btn {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--coal-3);
+  border: 1px solid var(--coal-4);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+.help-icon-btn:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+/* ── PEDIDO SEMANAL (entregas com múltiplos cortes) ─────────────────────── */
+.week-entry {
+  background: var(--coal-3);
+  border: 1px solid var(--coal-4);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+/* Barra de topo: identifica o cartão e isola a ação de excluir a entrega
+   inteira, para não ser confundida com o X de remover um corte. */
+.week-entry-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--coal-4);
+}
+.week-entry-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.week-entry-remove-btn {
+  background: transparent;
+  border: 1px solid rgba(231,76,60,0.4);
+  color: #e88a80;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.week-entry-remove-btn:hover {
+  background: rgba(231,76,60,0.15);
+  border-color: #e88a80;
+}
+
+.week-entry-header {
+  display: grid;
+  grid-template-columns: 130px 1fr 110px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+.week-entry-header .input-group { margin-bottom: 0; }
+.week-entry-header select {
+  width: 100%; background: var(--coal-2); border: 1px solid var(--coal-4);
+  border-radius: var(--radius); padding: 12px 10px; color: var(--text-main);
+  font-family: var(--font-body); font-size: 0.85rem; outline: none;
+}
+.week-entry-cuts { display: flex; flex-direction: column; gap: 8px; }
+.week-entry-cuts .cut-row { margin-bottom: 0; }
+.week-entry-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--coal-4);
+}
+.week-entry-subtotal { font-size: 0.9rem; font-weight: 700; color: var(--gold); }
+
+@media (max-width: 900px) {
+  .week-entry-header { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .week-entry-header { grid-template-columns: 1fr; }
+  .week-entry-remove-btn { padding: 6px 10px; font-size: 0.7rem; }
+}
+
 /* ── TABELA DE PEDIDOS ─────────────────────────────── */
+
 
 .orders-table-wrap { overflow-x: auto; }
 .orders-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -461,10 +562,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 4px 4px;
+  padding: 10px 16px 14px;
   gap: 8px;
   border-top: 1px solid var(--coal-4);
   margin-top: 8px;
+}
+.kanban-pagination .btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ── MODAL DETALHE DO PEDIDO (Produção) ─────────────────────────────── */

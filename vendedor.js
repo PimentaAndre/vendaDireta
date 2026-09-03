@@ -11,6 +11,10 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let cutRowCount = 0;
 let editingOrderId = null;
+let weekEntryCount = 0;
+let weekCutRowCount = 0;
+let myOrdersFull = [];      // guarda todos os pedidos carregados, para filtrar sem refetch
+let ordersTabFilter = 'active'; // 'active' (todo+progress) | 'done'
 
 // ── Verificação de Horário (Brasília) ─────────────────────────────────────────
 function getBrasiliaInfo() {
@@ -101,6 +105,11 @@ window.addEventListener('DOMContentLoaded', () => {
   loadCatalogExtras();
   addCutRow();
   loadMyOrders();
+
+  // Pré-preenche "Semana Começando Em" com a próxima segunda-feira
+  const weekStartEl = document.getElementById('week-start-date');
+  if (weekStartEl) weekStartEl.value = getNextMondayISO();
+  addWeekEntry();
 
   sb.channel('orders-vendedor-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
@@ -356,6 +365,260 @@ async function createOrder() {
   }
 }
 
+// ── Pedido Semanal (múltiplos clientes/dias) ────────────────────────────────
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Segunda-feira' },
+  { value: 1, label: 'Terça-feira' },
+  { value: 2, label: 'Quarta-feira' },
+  { value: 3, label: 'Quinta-feira' },
+  { value: 4, label: 'Sexta-feira' },
+  { value: 5, label: 'Sábado' },
+];
+
+function getNextMondayISO() {
+  const { dateStr } = getBrasiliaInfo();
+  const today = new Date(dateStr + 'T00:00:00');
+  const dow = today.getDay(); // 0=dom...6=sab
+  const diffToMonday = dow === 0 ? 1 : (dow === 1 ? 0 : 8 - dow);
+  today.setDate(today.getDate() + diffToMonday);
+  return today.toISOString().split('T')[0];
+}
+
+function switchOrderMode(mode) {
+  const isSingle = mode === 'single';
+  document.getElementById('single-order-form').style.display = isSingle ? 'block' : 'none';
+  document.getElementById('weekly-order-form').style.display = isSingle ? 'none' : 'block';
+  document.getElementById('tab-order-single').classList.toggle('active', isSingle);
+  document.getElementById('tab-order-weekly').classList.toggle('active', !isSingle);
+}
+
+function openWeekHelpModal() {
+  document.getElementById('modal-week-help').style.display = 'flex';
+}
+function closeWeekHelpModal() {
+  document.getElementById('modal-week-help').style.display = 'none';
+}
+
+// Cada "entrega" = 1 pedido (dia + cliente), e pode ter vários cortes dentro.
+function addWeekEntry() {
+  weekEntryCount++;
+  const entryId = 'we' + weekEntryCount;
+  const list = document.getElementById('week-entries-list');
+
+  const entry = document.createElement('div');
+  entry.className = 'week-entry';
+  entry.id = `week-entry-${entryId}`;
+  entry.innerHTML = `
+    <div class="week-entry-topbar">
+      <span class="week-entry-label">🗓️ Entrega</span>
+      <button type="button" class="week-entry-remove-btn" title="Remover esta entrega inteira" onclick="removeWeekEntry('${entryId}')">🗑️ Remover Entrega</button>
+    </div>
+
+    <div class="week-entry-header">
+      <div class="input-group week-input-day">
+        <label>Dia</label>
+        <select id="week-day-${entryId}" onchange="updateWeekTotal()">
+          ${WEEKDAY_OPTIONS.map(d => `<option value="${d.value}">${d.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="input-group week-input-client">
+        <label>Cliente *</label>
+        <input type="text" id="week-client-${entryId}" placeholder="Ex: Empório Dom Luis" autocomplete="off" />
+      </div>
+      <div class="input-group week-input-code">
+        <label>Marca *</label>
+        <input type="text" id="week-code-${entryId}" placeholder="Ex: EDL01" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="week-entry-cuts" id="week-entry-cuts-${entryId}"></div>
+
+    <div class="week-entry-footer">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="addWeekCutRow('${entryId}')">+ Adicionar Corte</button>
+      <span class="week-entry-subtotal" id="week-entry-subtotal-${entryId}">0 kg</span>
+    </div>`;
+
+  list.appendChild(entry);
+  addWeekCutRow(entryId); // toda entrega nasce com pelo menos 1 corte
+}
+
+function removeWeekEntry(entryId) {
+  const entries = document.querySelectorAll('.week-entry');
+  if (entries.length <= 1) return;
+  document.getElementById(`week-entry-${entryId}`).remove();
+  updateWeekTotal();
+}
+
+function addWeekCutRow(entryId) {
+  weekCutRowCount++;
+  const cutId = 'wc' + weekCutRowCount;
+  const container = document.getElementById(`week-entry-cuts-${entryId}`);
+
+  const row = document.createElement('div');
+  row.className = 'cut-row';
+  row.id = `cut-row-${cutId}`;
+  row.innerHTML = `
+    <div class="cut-row-inner">
+      <div class="input-group cut-input-code">
+        <label>Código</label>
+        <input
+          type="text"
+          id="cut-code-${cutId}"
+          class="cut-code-input"
+          placeholder="Ex: 775"
+          autocomplete="off"
+          oninput="onCodeTypedEdit('${cutId}')"
+        />
+      </div>
+      <div class="input-group cut-input-search" style="position:relative">
+        <label>Nome do Corte *</label>
+        <input
+          type="text"
+          id="cut-search-${cutId}"
+          class="cut-search-input"
+          placeholder="Nome ou busque pelo código..."
+          autocomplete="off"
+          oninput="onCutSearchEdit('${cutId}')"
+          onfocus="onCutSearchEdit('${cutId}')"
+          onblur="hideSuggestions('${cutId}')"
+        />
+        <div class="cut-suggestions" id="cut-suggestions-${cutId}" style="display:none"></div>
+      </div>
+      <div class="input-group cut-input-qty">
+        <label>Qtd (kg) *</label>
+        <input type="number" id="cut-qty-${cutId}" placeholder="5.0" min="0.1" step="0.1" oninput="updateWeekTotal()" />
+      </div>
+      <button class="btn-remove-cut" title="Remover corte" onclick="removeWeekCutRow('${entryId}','${cutId}')">✕</button>
+    </div>`;
+
+  container.appendChild(row);
+  updateWeekTotal();
+}
+
+function removeWeekCutRow(entryId, cutId) {
+  const rows = document.getElementById(`week-entry-cuts-${entryId}`).querySelectorAll('.cut-row');
+  if (rows.length <= 1) return;
+  document.getElementById(`cut-row-${cutId}`).remove();
+  updateWeekTotal();
+}
+
+function updateWeekTotal() {
+  const entries = document.querySelectorAll('.week-entry');
+  let grandTotal = 0;
+
+  entries.forEach(entryEl => {
+    const entryId = entryEl.id.replace('week-entry-', '');
+    let subtotal = 0;
+    entryEl.querySelectorAll('.week-entry-cuts .cut-row').forEach(row => {
+      const cutId = row.id.replace('cut-row-', '');
+      const qty = parseFloat(document.getElementById(`cut-qty-${cutId}`)?.value) || 0;
+      subtotal += qty;
+    });
+    const subtotalEl = document.getElementById(`week-entry-subtotal-${entryId}`);
+    if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2).replace('.', ',') + ' kg';
+    grandTotal += subtotal;
+  });
+
+  const totalEl = document.getElementById('week-total');
+  const kgEl = document.getElementById('week-total-kg');
+  const countEl = document.getElementById('week-total-count');
+  if (grandTotal > 0) {
+    totalEl.style.display = 'flex';
+    kgEl.textContent = grandTotal.toFixed(2).replace('.', ',') + ' kg';
+    countEl.textContent = `${entries.length} pedido${entries.length > 1 ? 's' : ''}`;
+  } else {
+    totalEl.style.display = 'none';
+  }
+}
+
+function getWeekEntries() {
+  const entryEls = document.querySelectorAll('.week-entry');
+  const entries = [];
+  let valid = true;
+
+  entryEls.forEach(entryEl => {
+    const entryId = entryEl.id.replace('week-entry-', '');
+    const dayOffset = parseInt(document.getElementById(`week-day-${entryId}`)?.value, 10);
+    const client = document.getElementById(`week-client-${entryId}`)?.value.trim();
+    const clientCode = document.getElementById(`week-code-${entryId}`)?.value.trim();
+
+    const cuts = [];
+    entryEl.querySelectorAll('.week-entry-cuts .cut-row').forEach(row => {
+      const cutId = row.id.replace('cut-row-', '');
+      const cutInput = document.getElementById(`cut-search-${cutId}`);
+      const qty = parseFloat(document.getElementById(`cut-qty-${cutId}`)?.value);
+      const cutName = cutInput?.dataset.name || cutInput?.value.trim();
+      const cutCode = cutInput?.dataset.code || '';
+      if (!cutName || !qty || qty <= 0) { valid = false; return; }
+      cuts.push({ code: cutCode, type: cutName, qty });
+    });
+
+    if (!client || !clientCode || !cuts.length) { valid = false; return; }
+    entries.push({ dayOffset, client, clientCode, cuts });
+  });
+
+  return valid && entries.length ? entries : null;
+}
+
+async function submitWeeklyOrders() {
+  hideMsg('week-error');
+  hideMsg('week-success');
+
+  const weekStart = document.getElementById('week-start-date').value;
+  if (!weekStart) return showMsg('week-error', 'Informe a data de início da semana.');
+
+  const entries = getWeekEntries();
+  if (!entries) return showMsg('week-error', 'Preencha cliente, marca e ao menos um corte válido em cada entrega.');
+
+  // Calcula a data de entrega de cada entrega (semana início + dia da semana)
+  const entriesWithDate = entries.map(e => {
+    const d = new Date(weekStart + 'T00:00:00');
+    d.setDate(d.getDate() + e.dayOffset);
+    return { ...e, deliveryDate: d.toISOString().split('T')[0] };
+  });
+
+  // Bloqueio de horário: se alguma entrega cair em hoje e já passou das 12h em dia útil
+  const blocked = entriesWithDate.some(e => isAfterNoonWeekday() && e.deliveryDate === getTodayBrasilia());
+  if (blocked) return openTimeBlockModal();
+
+  setLoading('btn-week-order', true);
+  try {
+    const payload = entriesWithDate.map(e => {
+      const totalKg = e.cuts.reduce((s, c) => s + c.qty, 0);
+      const cutType = e.cuts.map(c => `${c.code ? '[' + c.code + '] ' : ''}${c.type} (${c.qty.toString().replace('.', ',')} kg)`).join(' | ');
+      return {
+        vendor_id: currentUser.id,
+        vendor_name: currentUser.name || currentUser.username,
+        client_name: e.client,
+        client_code: e.clientCode,
+        cut_type: cutType,
+        cuts_json: JSON.stringify(e.cuts),
+        quantity_kg: parseFloat(totalKg.toFixed(2)),
+        observations: null,
+        delivery_date: e.deliveryDate,
+        status: 'todo',
+        created_at: new Date().toISOString()
+      };
+    });
+
+    const { error } = await sb.from('orders').insert(payload);
+    if (error) throw error;
+
+    document.getElementById('week-entries-list').innerHTML = '';
+    weekEntryCount = 0;
+    addWeekEntry();
+    document.getElementById('week-start-date').value = getNextMondayISO();
+
+    showMsg('week-success', `✅ ${payload.length} pedido${payload.length > 1 ? 's' : ''} enviado${payload.length > 1 ? 's' : ''} para a produção!`, 'success');
+    loadMyOrders();
+  } catch (e) {
+    console.error(e);
+    showMsg('week-error', 'Erro ao criar pedidos: ' + (e.message || 'tente novamente.'));
+  } finally {
+    setLoading('btn-week-order', false);
+  }
+}
+
 // ── Meus Pedidos ──────────────────────────────────────────────────────────────
 async function loadMyOrders() {
   document.getElementById('my-orders-loading').style.display = 'block';
@@ -372,22 +635,48 @@ async function loadMyOrders() {
 
     document.getElementById('my-orders-loading').style.display = 'none';
 
-    if (!orders || !orders.length) {
-      document.getElementById('my-orders-empty').style.display = 'block';
-      return;
-    }
+    myOrdersFull = orders || [];
 
-    document.getElementById('my-orders-list').style.display = 'block';
-    const tbody = document.getElementById('my-orders-tbody');
-    tbody.innerHTML = '';
+    document.getElementById('count-orders-active').textContent =
+      myOrdersFull.filter(o => o.status === 'todo' || o.status === 'progress').length;
+    document.getElementById('count-orders-done').textContent =
+      myOrdersFull.filter(o => o.status === 'done').length;
 
-    const statusMap = {
-      todo: { label: 'Pendente', cls: 'status-todo' },
-      progress: { label: 'Em Produção', cls: 'status-progress' },
-      done: { label: 'Concluído', cls: 'status-done' }
-    };
+    renderMyOrders();
 
-    orders.forEach((o, i) => {
+  } catch (e) {
+    console.error(e);
+    document.getElementById('my-orders-loading').textContent = 'Erro ao carregar pedidos.';
+  }
+}
+
+function switchOrdersTab(tab) {
+  ordersTabFilter = tab;
+  document.getElementById('tab-orders-active').classList.toggle('active', tab === 'active');
+  document.getElementById('tab-orders-done').classList.toggle('active', tab === 'done');
+  renderMyOrders();
+}
+
+function renderMyOrders() {
+  const orders = myOrdersFull.filter(o =>
+    ordersTabFilter === 'done' ? o.status === 'done' : (o.status === 'todo' || o.status === 'progress')
+  );
+
+  document.getElementById('my-orders-empty').style.display = orders.length ? 'none' : 'block';
+  document.getElementById('my-orders-list').style.display = orders.length ? 'block' : 'none';
+
+  if (!orders.length) return;
+
+  const tbody = document.getElementById('my-orders-tbody');
+  tbody.innerHTML = '';
+
+  const statusMap = {
+    todo: { label: 'Pendente', cls: 'status-todo' },
+    progress: { label: 'Em Produção', cls: 'status-progress' },
+    done: { label: 'Concluído', cls: 'status-done' }
+  };
+
+  orders.forEach((o, i) => {
       const date = new Date(o.created_at).toLocaleString('pt-BR');
       const st = statusMap[o.status] || statusMap.todo;
 
@@ -418,12 +707,7 @@ async function loadMyOrders() {
           <td style="color:var(--text-muted);font-size:0.8rem">${date}</td>
           <td>${editBtn}</td>
         </tr>`;
-    });
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById('my-orders-loading').textContent = 'Erro ao carregar pedidos.';
-  }
+  });
 }
 
 // ── Modal de Edição ───────────────────────────────────────────────────────────

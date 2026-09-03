@@ -34,6 +34,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const btnProd = document.querySelector('a[href="producao.html"]');
   if (btnProd) btnProd.style.display = currentUser.role === 'master' ? '' : 'none';
 
+  // Exibe botão "← Pedidos" apenas para supervisor (que também acessa a tela de vendas)
+  const btnVendedor = document.getElementById('btn-vendedor-supervisor');
+  if (btnVendedor) btnVendedor.style.display = currentUser.role === 'supervisor' ? 'inline-flex' : 'none';
+
   populateYearFilter();
   await loadDashboard();
 });
