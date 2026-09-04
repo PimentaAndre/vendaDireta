@@ -176,7 +176,7 @@ function addCutRow(prefill = null) {
 }
 
 function removeCutRow(id) {
-  const rows = document.querySelectorAll('.cut-row');
+  const rows = document.getElementById('cuts-list').querySelectorAll('.cut-row');
   if (rows.length <= 1) return;
   document.getElementById(`cut-row-${id}`).remove();
   updateTotal();
@@ -274,7 +274,7 @@ function hideSuggestions(id) {
 // ── Total ─────────────────────────────────────────────────────────────────────
 function updateTotal() {
   let total = 0;
-  document.querySelectorAll('.cut-row').forEach(row => {
+  document.getElementById('cuts-list').querySelectorAll('.cut-row').forEach(row => {
     const id = row.id.replace('cut-row-', '');
     const qty = parseFloat(document.getElementById(`cut-qty-${id}`)?.value) || 0;
     total += qty;
@@ -286,7 +286,7 @@ function updateTotal() {
 }
 
 function getCutRows() {
-  const rows = document.querySelectorAll('.cut-row');
+  const rows = document.getElementById('cuts-list').querySelectorAll('.cut-row');
   const cuts = [];
   let valid = true;
 
